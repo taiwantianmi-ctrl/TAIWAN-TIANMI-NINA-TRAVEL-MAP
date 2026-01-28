@@ -3,7 +3,7 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Search, MapPin, Navigation } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move } from "lucide-react";
 
 interface MapContainerProps {
     stores: Store[];
@@ -19,6 +19,16 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const placesLib = useMapsLibrary("places");
     const inputRef = useRef<HTMLInputElement>(null);
     const [tempPin, setTempPin] = useState<{ lat: number; lng: number } | null>(null);
+    const [showTools, setShowTools] = useState(false);
+    const toolsTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const triggerTools = () => {
+        setShowTools(true);
+        if (toolsTimerRef.current) clearTimeout(toolsTimerRef.current);
+        toolsTimerRef.current = setTimeout(() => {
+            setShowTools(false);
+        }, 3000);
+    };
 
     useEffect(() => {
         if (!placesLib || !inputRef.current || !map || !isAdminMode) return;
@@ -93,12 +103,9 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 defaultCenter={{ lat: 23.6978, lng: 120.9605 }}
                 defaultZoom={8}
                 mapId={"bf51a910020faedc"}
-                disableDefaultUI={false}
-                controlSize={32}
+                disableDefaultUI={true} // カスタマイズのため一度無効化
                 streetViewControl={true}
-                zoomControl={true}
-                fullscreenControl={false}
-                mapTypeControl={false}
+                streetViewControlOptions={{ position: 9 }} // BOTTOM_RIGHT
                 clickableIcons={false}
                 className="w-full h-full rounded-3xl overflow-hidden shadow-inner"
                 onClick={(e) => {
@@ -157,8 +164,9 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 )}
             </Map>
 
-            {/* Map Controls - Top Left */}
-            <div className={`absolute ${isAdminMode ? 'top-40 md:top-24' : 'top-4'} left-6 flex flex-col gap-3 pointer-events-none z-[10]`}>
+            {/* Map Controls - Vertical Stack on the Right */}
+            <div className="absolute bottom-24 right-4 flex flex-col items-center gap-3 z-[30] pointer-events-none">
+                {/* Locate Me - Always Visible or faint */}
                 <button
                     onClick={locateMe}
                     className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-gray-500 hover:text-pink-500 transition-all pointer-events-auto border-4 border-white hover:scale-110 active:scale-95"
@@ -166,6 +174,34 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 >
                     <Navigation size={20} />
                 </button>
+
+                {/* Main Movement/Tools Group */}
+                <div className="flex flex-col items-center gap-2 pointer-events-auto">
+                    {/* Expandable Tools */}
+                    <div className={`flex flex-col gap-2 transition-all duration-500 ${showTools ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+                        <button
+                            onClick={() => { map?.setZoom((map.getZoom() || 0) + 1); triggerTools(); }}
+                            className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"
+                        >
+                            <Plus size={18} />
+                        </button>
+                        <button
+                            onClick={() => { map?.setZoom((map.getZoom() || 0) - 1); triggerTools(); }}
+                            className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"
+                        >
+                            <Minus size={18} />
+                        </button>
+                    </div>
+
+                    {/* Movement/Trigger Icon */}
+                    <button
+                        onClick={triggerTools}
+                        className={`w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white animate-pulse' : 'bg-white text-gray-500'}`}
+                        title="画面移動・拡大操作"
+                    >
+                        <Move size={20} />
+                    </button>
+                </div>
             </div>
         </div>
     );
