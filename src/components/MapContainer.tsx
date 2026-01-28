@@ -173,16 +173,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
             {/* Map Controls - Vertical Stack on the Right */}
             <div className="absolute bottom-24 right-4 flex flex-col items-center gap-3 z-[30] pointer-events-none">
-                {/* Locate Me - Always Visible or faint */}
-                <button
-                    onClick={locateMe}
-                    className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-gray-500 hover:text-pink-500 transition-all pointer-events-auto border-4 border-white hover:scale-110 active:scale-95"
-                    title="現在地を表示"
-                >
-                    <Navigation size={20} />
-                </button>
-
-                {/* Main Movement/Tools Group */}
+                {/* Main Movement/Tools Group - Now on Top */}
                 <div className="flex flex-col items-center gap-2 pointer-events-auto">
                     {/* Expandable Tools - Cross Keys and Zoom */}
                     <div className={`transition-all duration-500 flex flex-col items-center gap-2 ${showTools ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90 pointer-events-none'}`}>
@@ -212,6 +203,15 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                         <Move size={24} />
                     </button>
                 </div>
+
+                {/* Locate Me - Now on Bottom */}
+                <button
+                    onClick={locateMe}
+                    className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-gray-500 hover:text-pink-500 transition-all pointer-events-auto border-4 border-white hover:scale-110 active:scale-95"
+                    title="現在地を表示"
+                >
+                    <Navigation size={20} />
+                </button>
             </div>
         </div>
     );
