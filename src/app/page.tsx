@@ -7,7 +7,7 @@ import { StoreDetailModal } from "@/components/StoreDetailModal";
 import { AdminPanel } from "@/components/AdminPanel";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Map as MapIcon, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft } from "lucide-react";
+import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft } from "lucide-react";
 
 export default function Home() {
   const { stores, genres, loading } = useStores();
@@ -89,37 +89,40 @@ export default function Home() {
     <main className="relative h-screen w-full overflow-hidden bg-white flex flex-col">
       {/* Top Floating Controls */}
       <div className="relative z-40 bg-white p-2 md:p-4 border-b border-gray-100">
-        <div className="w-full max-w-4xl flex justify-between items-start gap-2">
-          <div className="pointer-events-auto">
-            <motion.div
-              initial={{ x: -50, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              className="px-2 md:px-4 py-2 flex items-center gap-2 md:gap-4"
-            >
-              <div className="w-8 h-8 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white">
-                <MapIcon size={18} className="md:w-6 md:h-6" />
-              </div>
-              <div>
-                <h1 className="text-sm md:text-xl font-black text-sweet-brown tracking-tighter leading-tight">台湾の甘い旅</h1>
-                <p className="text-[8px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest">Taiwan Sweet Journey</p>
-              </div>
-            </motion.div>
+        <div className="w-full relative flex justify-between items-start">
+          <div className="max-w-4xl flex justify-between items-start gap-2 flex-1">
+            <div className="pointer-events-auto">
+              <motion.div
+                initial={{ x: -50, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                className="px-2 md:px-4 py-2 flex items-center gap-3 md:gap-4"
+              >
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white">
+                  <Plane size={24} className="md:w-6 md:h-6" />
+                </div>
+                <div>
+                  <h1 className="text-xl md:text-xl font-black text-sweet-brown tracking-tighter leading-tight">台湾の甘い旅</h1>
+                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest">Taiwan Sweet Journey</p>
+                </div>
+              </motion.div>
 
-            <div className="mt-2 flex gap-1 md:gap-2">
-              <div className="bg-white/80 backdrop-blur px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-pink-500">
-                <Heart size={12} fill="currentColor" /> {userStats.favorites.length}
-              </div>
-              <div className="bg-white/80 backdrop-blur px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-emerald-600">
-                <CheckCircle size={12} fill="currentColor" /> {userStats.visited.length}
+              <div className="mt-2 flex gap-1 md:gap-2 px-2 md:px-4">
+                <div className="bg-white/80 backdrop-blur px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-pink-500">
+                  <Heart size={12} fill="currentColor" /> {userStats.favorites.length}
+                </div>
+                <div className="bg-white/80 backdrop-blur px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-sm flex items-center gap-1.5 text-[10px] md:text-xs font-bold text-emerald-600">
+                  <CheckCircle size={12} fill="currentColor" /> {userStats.visited.length}
+                </div>
               </div>
             </div>
           </div>
-          {/* Shop Logo - Top Right */}
-          <div className="pointer-events-auto flex items-center pr-2">
+
+          {/* Shop Logo - Absolute Far Right on Desktop, Near Right on Mobile */}
+          <div className="pointer-events-auto flex items-center pr-2 md:absolute md:right-0 md:top-2">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 md:w-28 md:h-28 bg-white rounded-3xl shadow-lg border-4 border-white overflow-hidden p-1"
+              className="w-20 h-20 md:w-32 md:h-32 bg-white rounded-3xl shadow-lg border-4 border-white overflow-hidden p-1"
             >
               <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
             </motion.div>
