@@ -67,15 +67,15 @@ export default function Home() {
   }
 
   return (
-    <main className="relative h-screen w-full overflow-hidden bg-white">
+    <main className="relative h-screen w-full overflow-hidden bg-white flex flex-col">
       {/* Top Floating Controls */}
-      <div className="fixed top-0 left-0 right-0 z-40 p-2 md:p-4 flex flex-col gap-2 md:gap-4 pointer-events-none mb-safe">
+      <div className="relative z-40 bg-white p-2 md:p-4 border-b border-gray-100">
         <div className="w-full max-w-4xl flex justify-between items-start gap-2">
           <div className="pointer-events-auto">
             <motion.div
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
-              className="bg-white/90 backdrop-blur-md px-4 md:px-6 py-2 md:py-4 rounded-2xl md:rounded-3xl shadow-xl border-2 md:border-4 border-white flex items-center gap-2 md:gap-4"
+              className="px-2 md:px-4 py-2 flex items-center gap-2 md:gap-4"
             >
               <div className="w-8 h-8 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white">
                 <MapIcon size={18} className="md:w-6 md:h-6" />
@@ -98,11 +98,11 @@ export default function Home() {
         </div>
 
         {/* Genre Filter Bar */}
-        <div className="pointer-events-auto w-full max-w-4xl px-2">
+        <div className="w-full max-w-4xl px-2 mt-2">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            className="bg-white/95 backdrop-blur-md rounded-2xl md:rounded-[2rem] shadow-xl border-2 border-white overflow-hidden"
+            className="bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden"
           >
             {/* Toggle Button */}
             <button
@@ -171,7 +171,7 @@ export default function Home() {
       </div>
 
       {/* Map Container */}
-      <div className="w-full h-full pt-16 md:pt-20 p-2">
+      <div className="flex-1 p-2 bg-gray-50">
         <MapContainer
           stores={filteredStores}
           genres={genres}
