@@ -3,7 +3,7 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MapContainerProps {
     stores: Store[];
@@ -70,6 +70,13 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                     map.setZoom(14);
                 }
             });
+        }
+    };
+
+    const panMap = (dx: number, dy: number) => {
+        if (map) {
+            map.panBy(dx, dy);
+            triggerTools();
         }
     };
 
@@ -177,29 +184,32 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
                 {/* Main Movement/Tools Group */}
                 <div className="flex flex-col items-center gap-2 pointer-events-auto">
-                    {/* Expandable Tools */}
-                    <div className={`flex flex-col gap-2 transition-all duration-500 ${showTools ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
-                        <button
-                            onClick={() => { map?.setZoom((map.getZoom() || 0) + 1); triggerTools(); }}
-                            className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"
-                        >
-                            <Plus size={18} />
-                        </button>
-                        <button
-                            onClick={() => { map?.setZoom((map.getZoom() || 0) - 1); triggerTools(); }}
-                            className="w-10 h-10 bg-white rounded-xl shadow-lg flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"
-                        >
-                            <Minus size={18} />
-                        </button>
+                    {/* Expandable Tools - Cross Keys and Zoom */}
+                    <div className={`transition-all duration-500 flex flex-col items-center gap-2 ${showTools ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90 pointer-events-none'}`}>
+                        {/* Directional Pad */}
+                        <div className="grid grid-cols-3 gap-1 bg-white/50 backdrop-blur-sm p-2 rounded-2xl border-2 border-white shadow-lg">
+                            <div />
+                            <button onClick={() => panMap(0, -100)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronUp size={20} /></button>
+                            <div />
+                            <button onClick={() => panMap(-100, 0)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronLeft size={20} /></button>
+                            <div className="flex flex-col gap-1">
+                                <button onClick={() => { map?.setZoom((map.getZoom() || 0) + 1); triggerTools(); }} className="w-10 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-pink-500 hover:bg-pink-100"><Plus size={16} /></button>
+                                <button onClick={() => { map?.setZoom((map.getZoom() || 0) - 1); triggerTools(); }} className="w-10 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-pink-500 hover:bg-pink-100"><Minus size={16} /></button>
+                            </div>
+                            <button onClick={() => panMap(100, 0)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronRight size={20} /></button>
+                            <div />
+                            <button onClick={() => panMap(0, 100)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronDown size={20} /></button>
+                            <div />
+                        </div>
                     </div>
 
                     {/* Movement/Trigger Icon */}
                     <button
                         onClick={triggerTools}
-                        className={`w-12 h-12 rounded-2xl shadow-xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white animate-pulse' : 'bg-white text-gray-500'}`}
-                        title="画面移動・拡大操作"
+                        className={`w-14 h-14 rounded-3xl shadow-2xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white rotate-45' : 'bg-white text-gray-500 shadow-pink-100'}`}
+                        title="画面移動・操作パネルを表示"
                     >
-                        <Move size={20} />
+                        <Move size={24} />
                     </button>
                 </div>
             </div>
