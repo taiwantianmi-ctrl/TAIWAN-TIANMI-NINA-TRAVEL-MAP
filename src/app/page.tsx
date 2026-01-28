@@ -70,7 +70,7 @@ export default function Home() {
     <main className="relative h-screen w-full overflow-hidden bg-white">
       {/* Top Floating Controls */}
       <div className="fixed top-0 left-0 right-0 z-40 p-2 md:p-4 flex flex-col gap-2 md:gap-4 pointer-events-none mb-safe">
-        <div className="w-full max-w-4xl mx-auto flex justify-between items-start gap-2">
+        <div className="w-full max-w-4xl flex justify-between items-start gap-2">
           <div className="pointer-events-auto">
             <motion.div
               initial={{ x: -50, opacity: 0 }}
@@ -98,7 +98,7 @@ export default function Home() {
         </div>
 
         {/* Genre Filter Bar */}
-        <div className="pointer-events-auto w-full max-w-4xl mx-auto px-2">
+        <div className="pointer-events-auto w-full max-w-4xl px-2">
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
