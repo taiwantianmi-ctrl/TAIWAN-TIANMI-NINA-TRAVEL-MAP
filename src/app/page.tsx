@@ -13,7 +13,7 @@ export default function Home() {
   const { stores, genres, loading } = useStores();
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [selectedGenreId, setSelectedGenreId] = useState<string | null>(null);
+  const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const [userStats, setUserStats] = useState<UserStats>({ visited: [], favorites: [] });
   const [editingStore, setEditingStore] = useState<Partial<Store> | null>(null);
   const [googlePhotos, setGooglePhotos] = useState<string[]>([]);
@@ -60,8 +60,14 @@ export default function Home() {
 
 
 
-  const filteredStores = selectedGenreId
-    ? stores.filter(store => store.genres?.includes(selectedGenreId))
+  const toggleFilterGenre = (id: string) => {
+    setSelectedGenreIds(prev =>
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const filteredStores = selectedGenreIds.length > 0
+    ? stores.filter(store => store.genres?.some(gId => selectedGenreIds.includes(gId)))
     : stores;
 
   if (loading) {
@@ -139,8 +145,8 @@ export default function Home() {
                 <div className="text-left">
                   <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
                   <p className="text-xs md:text-sm font-black tracking-tighter">
-                    {selectedGenreId
-                      ? genres.find(g => g.id === selectedGenreId)?.nameJP
+                    {selectedGenreIds.length > 0
+                      ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
                       : "すべてのジャンル"}
                   </p>
                 </div>
@@ -165,16 +171,16 @@ export default function Home() {
                 >
                   <div className="p-3 md:p-4 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
                     <button
-                      onClick={() => { setSelectedGenreId(null); setShowGenreFilter(false); }}
-                      className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${!selectedGenreId ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                      onClick={() => { setSelectedGenreIds([]); setShowGenreFilter(false); }}
+                      className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                     >
                       すべて表示
                     </button>
                     {genres.map(genre => (
                       <button
                         key={genre.id}
-                        onClick={() => { setSelectedGenreId(genre.id); setShowGenreFilter(false); }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreId === genre.id ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                        onClick={() => toggleFilterGenre(genre.id)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                       >
                         <div
                           style={{ backgroundColor: genre.color || "#ffffff" }}
