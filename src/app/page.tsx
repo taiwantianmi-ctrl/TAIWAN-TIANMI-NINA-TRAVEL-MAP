@@ -47,6 +47,8 @@ export default function Home() {
     saveUserStats({ ...userStats, [type]: updated });
   };
 
+
+
   const filteredStores = selectedGenreId
     ? stores.filter(store => store.genres?.includes(selectedGenreId))
     : stores;
@@ -171,7 +173,7 @@ export default function Home() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 p-2 bg-gray-50">
+      <div className="flex-1 p-2 bg-gray-50 min-h-[50vh] md:min-h-[150vh]">
         <MapContainer
           stores={filteredStores}
           genres={genres}
@@ -232,7 +234,7 @@ export default function Home() {
 
       {/* Hidden Admin Trigger */}
       <motion.div
-        className="fixed bottom-6 right-6 z-[60] pointer-events-auto"
+        className="fixed bottom-6 left-6 z-[60] pointer-events-auto"
         whileHover={{ y: -5 }}
         transition={{ type: "spring", stiffness: 400, damping: 10 }}
       >

@@ -90,7 +90,7 @@ export function AdminPanel({
 
     const toggleGenreSelection = (genreId: string) => {
         const current = editingStore?.genres || [];
-        const updated = current.includes(genreId) ? current.filter(id => id !== genreId) : [...current, genreId].slice(0, 4);
+        const updated = current.includes(genreId) ? current.filter(id => id !== genreId) : [...current, genreId];
         setEditingStore({ ...editingStore, genres: updated });
     };
 
