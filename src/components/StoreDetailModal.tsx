@@ -118,12 +118,19 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {store.videos.map((v, i) => {
                                         if (!v) return null;
-                                        const videoId = v.includes("v=") ? v.split("v=")[1].split("&")[0] : v.split("/").pop();
+                                        // YouTube ID parsing logic including shorts support
+                                        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
+                                        const match = v.match(regExp);
+                                        const videoId = (match && match[2].length === 11) ? match[2] : null;
+
+                                        if (!videoId) return null;
+
                                         return (
-                                            <div key={i} className="aspect-video rounded-2xl overflow-hidden bg-gray-100 border-4 border-white shadow-xl">
+                                            <div key={i} className="aspect-video rounded-2xl overflow-hidden bg-black border-4 border-white shadow-xl">
                                                 <iframe
-                                                    src={`https://www.youtube.com/embed/${videoId}`}
+                                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
                                                     className="w-full h-full"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowFullScreen
                                                 />
                                             </div>
