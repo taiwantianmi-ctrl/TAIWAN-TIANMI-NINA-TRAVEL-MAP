@@ -227,8 +227,10 @@ export function AdminPanel({
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
-                                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">YouTubeリンク</h3>
-                                                {[0, 1].map(i => <input key={i} className="w-full p-3 rounded-xl bg-gray-50 border-none text-[10px] font-bold outline-none" placeholder={`YouTube URL ${i + 1}`} value={editingStore.videos?.[i] || ""} onChange={e => { const v = [...(editingStore.videos || [])]; v[i] = e.target.value; setEditingStore({ ...editingStore, videos: v }); }} />)}
+                                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 px-1">YouTubeリンク (最大4)</h3>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                    {[0, 1, 2, 3].map(i => <input key={i} className="w-full p-3 rounded-xl bg-gray-50 border-none text-[10px] font-bold outline-none border-2 border-transparent focus:border-pink-100 transition-all" placeholder={`YouTube URL ${i + 1}`} value={editingStore.videos?.[i] || ""} onChange={e => { const v = [...(editingStore.videos || [])]; v[i] = e.target.value; setEditingStore({ ...editingStore, videos: v }); }} />)}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

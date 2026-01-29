@@ -229,16 +229,16 @@ export default function Home() {
                 </div>
               </motion.div>
 
-              <div className="flex flex-wrap gap-2 px-2 md:px-4 mb-1">
-                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
+              <div className="flex flex-row items-center gap-2 px-2 md:px-4 mb-1 overflow-x-auto scrollbar-none">
+                <div className="whitespace-nowrap bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100 flex-shrink-0">
                   <Heart size={14} fill="currentColor" />
                   <span>ワタシの御用達店</span>
-                  <span className="ml-1 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
+                  <span className="ml-0.5 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
-                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100">
+                <div className="whitespace-nowrap bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100 flex-shrink-0">
                   <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
                   <span>行った！</span>
-                  <span className="ml-1 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
+                  <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
             </div>
