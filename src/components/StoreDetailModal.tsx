@@ -100,7 +100,8 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                 onClick={() => onToggleStat("visited", store.id)}
                                 className={`flex-1 min-w-[120px] py-3 md:py-4 rounded-2xl md:rounded-3xl border-2 font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${isVisited ? "bg-green-500 border-green-500 text-white shadow-lg shadow-green-100" : "bg-white border-green-100 text-green-500 hover:bg-green-50"}`}
                             >
-                                <CheckCircle size={18} fill={isVisited ? "currentColor" : "none"} /> {isVisited ? "訪問済み！" : "行った！"}
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isVisited ? "bg-white text-black" : "bg-green-500 text-black"}`}>✓</div>
+                                {isVisited ? "訪問済み！" : "行った！"}
                             </button>
                         </div>
 

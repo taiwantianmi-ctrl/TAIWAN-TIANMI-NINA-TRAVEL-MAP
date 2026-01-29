@@ -79,16 +79,16 @@ export default function Home() {
     : stores;
 
   // Common Genre Filter UI component to be reused
-  const GenreFilterUI = () => (
+  const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className="bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden"
+      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full flex flex-col justify-center' : ''}`}
     >
       {/* Toggle Button */}
       <button
         onClick={() => setShowGenreFilter(!showGenreFilter)}
-        className="w-full flex items-center justify-between px-4 py-3 md:py-4 text-sweet-brown hover:bg-gray-50/10 transition-colors"
+        className={`w-full flex items-center justify-between px-4 transition-colors ${isPC ? 'h-full py-2 hover:bg-gray-50/50' : 'py-3 md:py-4 hover:bg-gray-50/10'}`}
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 md:w-10 md:h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
@@ -96,7 +96,7 @@ export default function Home() {
           </div>
           <div className="text-left">
             <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-            <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-[200px]">
+            <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md">
               {selectedGenreIds.length > 0
                 ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
                 : "すべてのジャンル"}
@@ -169,52 +169,52 @@ export default function Home() {
     <main className="relative h-screen w-full overflow-hidden bg-white flex flex-col">
       {/* Top Floating Controls */}
       <div className="relative z-40 bg-white p-2 md:p-4 border-b border-gray-100">
-        <div className="w-full relative flex justify-between items-start">
-          <div className="max-w-4xl flex justify-between items-start gap-2 flex-1">
-            <div className="pointer-events-auto cursor-pointer">
+        <div className="w-full flex items-stretch gap-4">
+          {/* Main Content Area: Title & Stats & Filter */}
+          <div className="flex-1 flex flex-col md:flex-row items-stretch gap-4">
+            {/* Left: Title & Stats */}
+            <div className="flex flex-col gap-2 pointer-events-auto cursor-pointer">
               <motion.div
-                initial={{ x: -50, opacity: 0 }}
+                initial={{ x: -10, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
-                className="px-2 md:px-4 py-2 flex items-center gap-3 md:gap-4 hover:opacity-70 transition-opacity"
+                className="px-2 md:px-4 py-1 flex items-center gap-3 md:gap-4 hover:opacity-70 transition-opacity"
                 onClick={resetApp}
               >
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white">
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white shrink-0">
                   <Plane size={24} className="md:w-6 md:h-6" />
                 </div>
-                <div>
-                  <h1 className="text-xl md:text-xl font-black text-sweet-brown tracking-tighter leading-tight">台湾の甘い旅</h1>
-                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest">Taiwan Sweet Journey</p>
+                <div className="min-w-0">
+                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">台湾の甘い旅</h1>
+                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweet Journey</p>
                 </div>
               </motion.div>
 
-              <div className="mt-2 flex flex-wrap items-start gap-2 px-2 md:px-4">
-                <div className="flex flex-wrap gap-2">
-                  <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
-                    <Heart size={14} fill="currentColor" />
-                    <span>ワタシの御用達店</span>
-                    <span className="ml-1 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
-                  </div>
-                  <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-green-600 border border-green-100">
-                    <CheckCircle size={14} fill="currentColor" className="text-green-500" />
-                    <span>行った！</span>
-                    <span className="ml-1 bg-green-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
-                  </div>
+              <div className="flex flex-wrap gap-2 px-2 md:px-4 mb-1">
+                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
+                  <Heart size={14} fill="currentColor" />
+                  <span>ワタシの御用達店</span>
+                  <span className="ml-1 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
-
-                {/* Genre Filter Bar - PC Position */}
-                <div className="hidden md:block flex-1 max-w-md">
-                  <GenreFilterUI />
+                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-green-600 border border-green-100">
+                  <div className="w-4 h-4 bg-green-500 text-black rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
+                  <span>行った！</span>
+                  <span className="ml-1 bg-green-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
             </div>
+
+            {/* Middle: Genre Filter - PC - Extends to Logo */}
+            <div className="hidden md:block flex-1 pointer-events-auto">
+              <GenreFilterUI isPC={true} />
+            </div>
           </div>
 
-          {/* Shop Logo - Absolute Far Right on Desktop, Near Right on Mobile */}
-          <div className="pointer-events-auto flex items-center pr-2 md:absolute md:right-0 md:top-2">
+          {/* Right: Shop Logo */}
+          <div className="pointer-events-auto self-start md:self-stretch flex items-center pr-2">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 md:w-32 md:h-32 bg-white rounded-3xl shadow-lg border-4 border-white overflow-hidden p-1"
+              className="w-20 h-20 md:w-32 md:h-32 bg-white rounded-3xl shadow-lg border-4 border-white overflow-hidden p-1 shrink-0"
             >
               <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
             </motion.div>
