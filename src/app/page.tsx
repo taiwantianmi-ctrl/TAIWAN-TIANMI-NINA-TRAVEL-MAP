@@ -83,70 +83,110 @@ export default function Home() {
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full flex flex-col justify-center' : ''}`}
+      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full' : ''}`}
     >
-      {/* Toggle Button */}
-      <button
-        onClick={() => setShowGenreFilter(!showGenreFilter)}
-        className={`w-full flex items-center justify-between px-4 transition-colors ${isPC ? 'h-full py-2 hover:bg-gray-50/50' : 'py-3 md:py-4 hover:bg-gray-50/10'}`}
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 md:w-10 md:h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
-            <LayoutGrid size={18} />
+      {isPC ? (
+        <div className="h-full flex items-center p-3 md:px-6 gap-4">
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="w-10 h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
+              <LayoutGrid size={18} />
+            </div>
+            <div className="text-left hidden lg:block">
+              <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
+              <p className="text-[10px] font-bold text-gray-400">マルチ選択可</p>
+            </div>
           </div>
-          <div className="text-left">
-            <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-            <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md">
-              {selectedGenreIds.length > 0
-                ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
-                : "すべてのジャンル"}
-            </p>
+
+          <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
+            <button
+              onClick={() => setSelectedGenreIds([])}
+              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white border-sweet-brown" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+            >
+              すべて
+            </button>
+            {genres.map(genre => (
+              <button
+                key={genre.id}
+                onClick={() => toggleFilterGenre(genre.id)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white border-pastel-pink ring-2 ring-white/50" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+              >
+                <div
+                  style={{ backgroundColor: genre.color || "#ffffff" }}
+                  className="w-4 h-4 rounded flex items-center justify-center text-[10px] shadow-sm border border-white/20"
+                >
+                  {genre.iconUrl}
+                </div>
+                {genre.nameJP}
+              </button>
+            ))}
           </div>
         </div>
-        <motion.div
-          animate={{ rotate: showGenreFilter ? 90 : -90 }}
-          transition={{ duration: 0.3 }}
-          className="text-gray-300"
-        >
-          <ChevronLeft size={20} />
-        </motion.div>
-      </button>
-
-      {/* Expandable Content */}
-      <AnimatePresence>
-        {showGenreFilter && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="overflow-hidden"
+      ) : (
+        <>
+          {/* Toggle Button for Mobile */}
+          <button
+            onClick={() => setShowGenreFilter(!showGenreFilter)}
+            className="w-full flex items-center justify-between px-4 py-3 md:py-4 text-sweet-brown hover:bg-gray-50/10 transition-colors"
           >
-            <div className="p-3 md:p-4 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
-              <button
-                onClick={() => { setSelectedGenreIds([]); setShowGenreFilter(false); }}
-                className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
-              >
-                すべて表示
-              </button>
-              {genres.map(genre => (
-                <button
-                  key={genre.id}
-                  onClick={() => toggleFilterGenre(genre.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
-                >
-                  <div
-                    style={{ backgroundColor: genre.color || "#ffffff" }}
-                    className="w-4 h-4 rounded flex items-center justify-center text-[10px] shadow-sm border border-white/20"
-                  >
-                    {genre.iconUrl}
-                  </div>
-                  {genre.nameJP}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
+                <LayoutGrid size={18} />
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
+                <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md">
+                  {selectedGenreIds.length > 0
+                    ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
+                    : "すべてのジャンル"}
+                </p>
+              </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            <motion.div
+              animate={{ rotate: showGenreFilter ? 90 : -90 }}
+              transition={{ duration: 0.3 }}
+              className="text-gray-300"
+            >
+              <ChevronLeft size={20} />
+            </motion.div>
+          </button>
+
+          {/* Expandable Content Layer */}
+          <AnimatePresence>
+            {showGenreFilter && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 md:p-4 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
+                  <button
+                    onClick={() => { setSelectedGenreIds([]); setShowGenreFilter(false); }}
+                    className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                  >
+                    すべて表示
+                  </button>
+                  {genres.map(genre => (
+                    <button
+                      key={genre.id}
+                      onClick={() => toggleFilterGenre(genre.id)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                    >
+                      <div
+                        style={{ backgroundColor: genre.color || "#ffffff" }}
+                        className="w-4 h-4 rounded flex items-center justify-center text-[10px] shadow-sm border border-white/20"
+                      >
+                        {genre.iconUrl}
+                      </div>
+                      {genre.nameJP}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </motion.div>
   );
 
