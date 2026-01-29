@@ -235,10 +235,10 @@ export default function Home() {
                   <span>ワタシの御用達店</span>
                   <span className="ml-1 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
-                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-green-600 border border-green-100">
-                  <div className="w-4 h-4 bg-green-500 text-black rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
+                <div className="bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100">
+                  <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
                   <span>行った！</span>
-                  <span className="ml-1 bg-green-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
+                  <span className="ml-1 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
             </div>
