@@ -41,6 +41,7 @@ export function AdminPanel({
     formStep,
     setFormStep
 }: AdminPanelProps) {
+    const placesLib = useMapsLibrary("places");
     const [activeTab, setActiveTab] = useState<"stores" | "genres" | "settings">("stores");
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [inputPassword, setInputPassword] = useState("");
@@ -104,6 +105,42 @@ export function AdminPanel({
             console.error(e);
             alert("アップロードに失敗しました");
         } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const fetchGooglePhotos = async () => {
+        if (!placesLib || !editingStore?.nameJP) return;
+        setIsUploadingLogo(true); // Reuse loading state or add new one
+        try {
+            const service = new placesLib.PlacesService(document.createElement("div"));
+            // Search for the place
+            const request = {
+                query: editingStore.nameJP,
+                fields: ["photos", "place_id"],
+                locationBias: editingStore.lat && editingStore.lng ? { lat: editingStore.lat, lng: editingStore.lng } : undefined
+            };
+
+            service.findPlaceFromQuery(request, (results: google.maps.places.PlaceResult[] | null, status: google.maps.places.PlacesServiceStatus) => {
+                if (status === placesLib.PlacesServiceStatus.OK && results && results[0]) {
+                    const placeId = results[0].place_id;
+                    if (placeId) {
+                        service.getDetails({ placeId, fields: ["photos"] }, (place: google.maps.places.PlaceResult | null, detailStatus: google.maps.places.PlacesServiceStatus) => {
+                            if (detailStatus === placesLib.PlacesServiceStatus.OK && place?.photos) {
+                                const urls = place.photos.map((p: google.maps.places.PlacePhoto) => p.getUrl({ maxWidth: 1000, maxHeight: 800 }));
+                                setGooglePhotos(urls);
+                            } else {
+                                alert("写真が見つかりませんでした");
+                            }
+                        });
+                    }
+                } else {
+                    alert("店舗が見つかりませんでした");
+                }
+                setIsUploadingLogo(false);
+            });
+        } catch (e) {
+            console.error(e);
             setIsUploadingLogo(false);
         }
     };
@@ -215,18 +252,33 @@ export function AdminPanel({
                                         </div>
                                         <div className="md:col-span-2 space-y-6">
                                             <div>
-                                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">画像選択 (最大4)</h3>
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">画像選択 (最大4)</h3>
+                                                    <button
+                                                        onClick={fetchGooglePhotos}
+                                                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-black hover:bg-blue-100 transition-colors"
+                                                    >
+                                                        <Search size={12} strokeWidth={3} />
+                                                        Google画像を取得
+                                                    </button>
+                                                </div>
                                                 <div className="grid grid-cols-3 gap-2 mb-4">
                                                     {editingStore.images?.map((url, i) => <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-pink-100 group"><img src={url} className="w-full h-full object-cover" /><button onClick={() => setEditingStore({ ...editingStore, images: editingStore.images?.filter((_, idx) => idx !== i) })} className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100"><X size={10} /></button></div>)}
                                                     {(!editingStore.images || editingStore.images.length === 0) && <div className="col-span-3 aspect-[3/1] rounded-xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300 text-[10px] font-black uppercase tracking-widest leading-none">未選択</div>}
                                                 </div>
-                                                <div className="p-3 bg-blue-50/30 rounded-2xl border-2 border-blue-50">
-                                                    <div className="grid grid-cols-4 gap-2 max-h-40 md:max-h-60 overflow-y-auto scrollbar-thin">
-                                                        {googlePhotos.map((url, i) => {
-                                                            const isSelected = editingStore.images?.includes(url);
-                                                            return <button key={i} onClick={() => { const current = editingStore.images || []; if (isSelected) setEditingStore({ ...editingStore, images: current.filter(u => u !== url) }); else if (current.length < 4) setEditingStore({ ...editingStore, images: [...current, url] }); }} className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${isSelected ? "border-blue-400" : "border-transparent"}`}><img src={url} className="w-full h-full object-cover" />{isSelected && <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center"><CheckCircle size={14} className="text-white" /></div>}</button>;
-                                                        })}
-                                                    </div>
+                                                <div className={`p-3 bg-blue-50/30 rounded-2xl border-2 border-blue-50 transition-all ${googlePhotos.length === 0 ? 'opacity-50 grayscale' : ''}`}>
+                                                    {googlePhotos.length === 0 ? (
+                                                        <div className="py-8 text-center">
+                                                            <p className="text-[10px] font-bold text-blue-300 uppercase tracking-widest">上のボタンで取得</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-4 gap-2 max-h-40 md:max-h-60 overflow-y-auto scrollbar-thin">
+                                                            {googlePhotos.map((url, i) => {
+                                                                const isSelected = editingStore.images?.includes(url);
+                                                                return <button key={i} onClick={() => { const current = editingStore.images || []; if (isSelected) setEditingStore({ ...editingStore, images: current.filter(u => u !== url) }); else if (current.length < 4) setEditingStore({ ...editingStore, images: [...current, url] }); }} className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all ${isSelected ? "border-blue-400" : "border-transparent"}`}><img src={url} className="w-full h-full object-cover" />{isSelected && <div className="absolute inset-0 bg-blue-500/20 flex items-center justify-center"><CheckCircle size={14} className="text-white" /></div>}</button>;
+                                                            })}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             <div className="space-y-4">
