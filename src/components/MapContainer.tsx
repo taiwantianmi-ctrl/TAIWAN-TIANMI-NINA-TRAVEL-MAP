@@ -47,14 +47,14 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 renderer: {
                     render: ({ count, position }) => {
                         const div = document.createElement('div');
-                        div.className = "flex items-center justify-center w-14 h-14 cursor-pointer hover:scale-110 transition-transform active:scale-90";
+                        div.className = "flex items-center justify-center w-14 h-14 cursor-pointer";
                         div.innerHTML = `
-                            <div class="relative w-12 h-12 bg-white rounded-full border-4 border-pink-400 shadow-2xl flex items-center justify-center group overflow-visible">
-                                <div class="absolute -inset-1.5 bg-pink-400/20 rounded-full animate-ping"></div>
-                                <div class="absolute -top-1.5 -right-1.5 bg-sweet-brown text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                            <div class="relative w-12 h-12 bg-white rounded-full border-4 border-pink-400 shadow-2xl flex items-center justify-center group">
+                                <div class="absolute -inset-1 bg-pink-100/50 rounded-full transition-transform group-hover:scale-110"></div>
+                                <div class="absolute -top-1.5 -right-1.5 bg-sweet-brown text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md z-10">
                                     ${count}
                                 </div>
-                                <div class="text-xl">🍬</div>
+                                <div class="text-xl z-20">🍬</div>
                             </div>
                         `;
                         return new google.maps.marker.AdvancedMarkerElement({
@@ -68,8 +68,11 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                         const firstMarker = cluster.markers[0] as google.maps.marker.AdvancedMarkerElement;
                         const pos = firstMarker.position;
                         if (pos) {
-                            map.panTo(pos);
-                            map.setZoom(Math.max((map.getZoom() || 8) + 3, 15));
+                            // Use moveCamera for a single smooth transition to reduce flickering
+                            map.moveCamera({
+                                center: pos,
+                                zoom: Math.max((map.getZoom() || 8) + 3, 15)
+                            });
                             return false; // Prevent default fitBounds behavior
                         }
                     }
@@ -183,7 +186,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 streetViewControl={true}
                 streetViewControlOptions={{ position: 9 }} // BOTTOM_RIGHT
                 clickableIcons={false}
-                className="w-full h-full rounded-3xl overflow-hidden shadow-inner"
+                className="w-full h-full rounded-3xl overflow-hidden"
                 onClick={(e) => {
                     if (isAdminMode && e.detail.latLng && onLocationSelect) {
                         const lat = e.detail.latLng.lat;
