@@ -2,8 +2,9 @@
 
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 
 interface MapContainerProps {
     stores: Store[];
@@ -21,6 +22,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const [tempPin, setTempPin] = useState<{ lat: number; lng: number } | null>(null);
     const [showTools, setShowTools] = useState(false);
     const toolsTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const clusterer = useRef<MarkerClusterer | null>(null);
+    const [markers, setMarkers] = useState<{ [key: string]: google.maps.marker.AdvancedMarkerElement }>({});
 
     const triggerTools = (manualToggle = false) => {
         if (manualToggle) {
@@ -34,6 +37,47 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             setShowTools(false);
         }, 2000);
     };
+
+    // Initialize Clusterer
+    useEffect(() => {
+        if (!map) return;
+        if (!clusterer.current) {
+            clusterer.current = new MarkerClusterer({
+                map,
+                renderer: {
+                    render: ({ count, position }) => {
+                        const div = document.createElement('div');
+                        div.className = "flex items-center justify-center w-14 h-14 cursor-pointer hover:scale-110 transition-transform active:scale-90";
+                        div.innerHTML = `
+                            <div class="relative w-12 h-12 bg-white rounded-full border-4 border-pink-400 shadow-2xl flex items-center justify-center group overflow-visible">
+                                <div class="absolute -inset-1.5 bg-pink-400/20 rounded-full animate-ping"></div>
+                                <div class="absolute -top-1.5 -right-1.5 bg-sweet-brown text-white text-[10px] font-black w-6 h-6 rounded-full flex items-center justify-center border-2 border-white shadow-md">
+                                    ${count}
+                                </div>
+                                <div class="text-xl">🍬</div>
+                            </div>
+                        `;
+                        return new google.maps.marker.AdvancedMarkerElement({
+                            position,
+                            content: div,
+                        });
+                    }
+                }
+            });
+        }
+    }, [map]);
+
+    // Update markers in clusterer
+    useEffect(() => {
+        if (clusterer.current) {
+            clusterer.current.clearMarkers();
+            // Filter out null markers and sync with current stores
+            const activeMarkers = stores
+                .map(s => markers[s.id])
+                .filter(m => m !== undefined);
+            clusterer.current.addMarkers(activeMarkers);
+        }
+    }, [markers, stores]);
 
     useEffect(() => {
         if (!placesLib || !inputRef.current || !map || !isAdminMode) return;
@@ -145,8 +189,13 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             key={store.id}
                             position={{ lat: store.lat, lng: store.lng }}
                             onClick={() => onStoreSelect(store)}
+                            ref={(marker) => {
+                                if (marker && !markers[store.id]) {
+                                    setMarkers(prev => ({ ...prev, [store.id]: marker }));
+                                }
+                            }}
                         >
-                            <div className={`relative group cursor-pointer transition-transform hover:scale-110 active:scale-95 ${isAdminMode ? 'opacity-50 grayscale-[0.5]' : ''}`}>
+                            <div className={`relative group cursor-pointer transition-all duration-300 hover:scale-110 active:scale-95 ${isAdminMode ? 'opacity-50 grayscale-[0.5]' : ''}`}>
                                 {userStats.favorites.includes(store.id) && (
                                     <div className="absolute -top-2 -right-2 bg-pink-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] shadow-sm z-10 animate-pulse">
                                         ❤
@@ -160,11 +209,11 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
                                 <div
                                     style={{ backgroundColor: info.color }}
-                                    className="w-12 h-12 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-2xl transform transition-all group-hover:rotate-12 group-hover:shadow-2xl"
+                                    className="w-12 h-12 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-2xl transform transition-all group-hover:rotate-12 group-hover:shadow-2xl hover:z-50"
                                 >
                                     {info.icon}
                                 </div>
-                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white/95 backdrop-blur px-3 py-1 rounded-xl shadow-lg border-2 border-white text-[10px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all text-sweet-brown transform translate-y-1 group-hover:translate-y-0">
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white/95 backdrop-blur px-3 py-1 rounded-xl shadow-lg border-2 border-white text-[10px] font-black whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all text-sweet-brown transform translate-y-1 group-hover:translate-y-0 z-50">
                                     {store.nameJP}
                                 </div>
                             </div>
