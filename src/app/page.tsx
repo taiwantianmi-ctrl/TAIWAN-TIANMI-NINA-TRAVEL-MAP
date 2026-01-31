@@ -268,7 +268,7 @@ export default function Home() {
       </div>
 
       {/* Map Container */}
-      <div className="flex-1 p-2 bg-gray-50 min-h-[50vh] md:min-h-[200vh]">
+      <div className="flex-1 p-2 bg-gray-50 overflow-hidden relative">
         <MapContainer
           stores={filteredStores}
           genres={genres}

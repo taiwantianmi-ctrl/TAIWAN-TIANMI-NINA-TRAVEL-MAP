@@ -176,7 +176,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             )}
 
             <Map
-                defaultCenter={{ lat: 23.6978, lng: 120.9605 }}
+                defaultCenter={{ lat: 23.8, lng: 120.95 }}
                 defaultZoom={7}
                 mapId={"bf51a910020faedc"}
                 disableDefaultUI={true} // カスタマイズのため一度無効化
