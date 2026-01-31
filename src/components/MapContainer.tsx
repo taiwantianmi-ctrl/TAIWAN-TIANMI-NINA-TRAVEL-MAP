@@ -86,14 +86,30 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         }
     }, [map]);
 
+    // Synchronize markers state with stores data
+    useEffect(() => {
+        const storeIds = new Set(stores.map(s => s.id));
+        setMarkers(prev => {
+            const next = { ...prev };
+            let changed = false;
+            Object.keys(next).forEach(id => {
+                if (!storeIds.has(id)) {
+                    delete next[id];
+                    changed = true;
+                }
+            });
+            return changed ? next : prev;
+        });
+    }, [stores]);
+
     // Update markers in clusterer
     useEffect(() => {
         if (clusterer.current) {
             clusterer.current.clearMarkers();
-            // Filter out null markers and sync with current stores
+            // Map markers to the ones that still exist in our stores list
             const activeMarkers = stores
                 .map(s => markers[s.id])
-                .filter(m => m !== undefined);
+                .filter((m): m is google.maps.marker.AdvancedMarkerElement => m !== undefined);
             clusterer.current.addMarkers(activeMarkers);
         }
     }, [markers, stores]);
@@ -208,11 +224,13 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             key={store.id}
                             position={{ lat: store.lat, lng: store.lng }}
                             ref={(marker) => {
-                                if (marker && !markers[store.id]) {
-                                    const handler = () => onStoreSelect(store);
-                                    marker.addListener("click", handler);
-                                    marker.addEventListener("gmp-click", handler);
-                                    setMarkers(prev => ({ ...prev, [store.id]: marker }));
+                                if (marker) {
+                                    if (!markers[store.id]) {
+                                        const handler = () => onStoreSelect(store);
+                                        marker.addListener("click", handler);
+                                        marker.addEventListener("gmp-click", handler);
+                                        setMarkers(prev => ({ ...prev, [store.id]: marker }));
+                                    }
                                 }
                             }}
                         >
