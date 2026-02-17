@@ -5,6 +5,7 @@ import { useStores } from "@/hooks/useStores";
 import { MapContainer } from "@/components/MapContainer";
 import { StoreDetailModal } from "@/components/StoreDetailModal";
 import { AdminPanel } from "@/components/AdminPanel";
+import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft } from "lucide-react";
@@ -359,6 +360,8 @@ export default function Home() {
           <Settings size={14} />
         </button>
       </div>
+
+      <PWAInstallGuide />
     </main >
   );
 }
