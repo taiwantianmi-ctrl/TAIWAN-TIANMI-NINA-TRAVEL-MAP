@@ -5,9 +5,10 @@ import { Store, Genre } from "@/types";
 import { ref as dbRef, push, set, remove, onValue, get } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
-import { X, Plus, Trash2, Edit2, Save, Lock, Search, Image as ImageIcon, Loader2, Map as MapIcon, Tag, LayoutGrid, CheckCircle, Settings, Key, ChevronLeft, Upload } from "lucide-react";
+import { X, Plus, Trash2, Edit2, Save, Lock, Search, Image as ImageIcon, Loader2, Map as MapIcon, Tag, LayoutGrid, CheckCircle, Settings, Key, ChevronLeft, Upload, Globe, Instagram, ShoppingBag } from "lucide-react";
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 interface AdminPanelProps {
     stores: Store[];
@@ -49,6 +50,7 @@ export function AdminPanel({
     const [newPassword, setNewPassword] = useState("");
     const [editingGenre, setEditingGenre] = useState<Partial<Genre> | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
     useEffect(() => {
         const passRef = dbRef(db, "admin/password");
@@ -65,29 +67,92 @@ export function AdminPanel({
         }
     }, [editingStore, formStep, setFormStep]);
 
-    const handleLogin = () => { if (inputPassword === dbPassword) setIsAuthenticated(true); else alert("パスワードが違います"); };
+    const handleLogin = () => { if (inputPassword === dbPassword) { setIsAuthenticated(true); toast.success("管理モードでログインしました"); } else toast.error("パスワードが違います"); };
 
     const handleUpdatePassword = async () => {
-        if (newPassword.length < 4) { alert("4文字以上入力してください"); return; }
-        try { await set(dbRef(db, "admin/password"), newPassword); alert("更新完了"); setNewPassword(""); } catch (e) { console.error(e); }
+        if (newPassword.length < 4) { toast.error("4文字以上入力してください"); return; }
+        try { await set(dbRef(db, "admin/password"), newPassword); toast.success("パスワードを更新しました"); setNewPassword(""); } catch (e) { toast.error("更新に失敗しました"); console.error(e); }
     };
 
     const handleSaveStore = async () => {
-        if (!editingStore?.nameJP || !editingStore.lat || !editingStore.lng) { alert("必須項目を入力してください"); return; }
+        if (!editingStore?.nameJP || !editingStore.lat || !editingStore.lng) {
+            toast.error("必要事項を入力してください (店名・場所)");
+            return;
+        }
+
+        setIsSaving(true);
         try {
-            if (editingStore.id) await set(dbRef(db, `stores/${editingStore.id}`), editingStore);
-            else await push(dbRef(db, "stores"), editingStore);
-            setEditingStore(null); setFormStep(1); setGooglePhotos([]);
-        } catch (e) { console.error(e); }
+            // Cleanup data to ensure no undefined values are sent to Firebase
+            const dataToSave: any = {
+                nameJP: editingStore.nameJP,
+                nameCH: editingStore.nameCH || "",
+                descriptionJP: editingStore.descriptionJP || "",
+                descriptionCH: editingStore.descriptionCH || "",
+                addressJP: editingStore.addressJP || "",
+                addressCH: editingStore.addressCH || "",
+                lat: editingStore.lat,
+                lng: editingStore.lng,
+                genres: editingStore.genres || [],
+                images: editingStore.images || [],
+                videos: (editingStore.videos || []).filter(v => v && v.trim() !== ""),
+                website: editingStore.website || "",
+                instagram: editingStore.instagram || "",
+                buyUrl: editingStore.buyUrl || "",
+            };
+
+            if (editingStore.id) {
+                dataToSave.id = editingStore.id;
+                await set(dbRef(db, `stores/${editingStore.id}`), dataToSave);
+            } else {
+                const newRef = push(dbRef(db, "stores"));
+                dataToSave.id = newRef.key;
+                await set(newRef, dataToSave);
+            }
+
+            toast.success(editingStore.id ? "店舗情報を更新しました" : "新しい店舗を追加しました");
+            setEditingStore(null);
+            setFormStep(1);
+            setGooglePhotos([]);
+        } catch (e) {
+            toast.error("保存に失敗しました");
+            console.error("Save store error:", e);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleSaveGenre = async () => {
-        if (!editingGenre?.nameJP || !editingGenre.iconUrl || !editingGenre.color) { alert("必須項目を入力してください"); return; }
+        if (!editingGenre?.nameJP || !editingGenre.iconUrl || !editingGenre.color) {
+            toast.error("必須項目を入力してください");
+            return;
+        }
+
+        setIsSaving(true);
         try {
-            if (editingGenre.id) await set(dbRef(db, `genres/${editingGenre.id}`), editingGenre);
-            else await push(dbRef(db, "genres"), editingGenre);
+            const dataToSave: any = {
+                nameJP: editingGenre.nameJP,
+                nameCH: editingGenre.nameCH || "",
+                iconUrl: editingGenre.iconUrl,
+                color: editingGenre.color,
+            };
+
+            if (editingGenre.id) {
+                dataToSave.id = editingGenre.id;
+                await set(dbRef(db, `genres/${editingGenre.id}`), dataToSave);
+            } else {
+                const newRef = push(dbRef(db, "genres"));
+                dataToSave.id = newRef.key;
+                await set(newRef, dataToSave);
+            }
+
+            toast.success(editingGenre.id ? "ジャンルを更新しました" : "新しいジャンルを追加しました");
             setEditingGenre(null);
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            toast.error("保存に失敗しました");
+            console.error("Save genre error:", e);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,12 +165,41 @@ export function AdminPanel({
             await uploadBytes(fileRef, file);
             const url = await getDownloadURL(fileRef);
             await set(dbRef(db, "admin/logoUrl"), url);
-            alert("ロゴを更新しました！");
+            toast.success("ロゴを更新しました！");
         } catch (e) {
             console.error(e);
-            alert("アップロードに失敗しました");
+            toast.error("アップロードに失敗しました");
         } finally {
             setIsUploadingLogo(false);
+        }
+    };
+
+    const handleDeleteStore = async (storeId: string) => {
+        if (!window.confirm("この店舗を削除してもよろしいですか？")) return;
+        try {
+            await remove(dbRef(db, `stores/${storeId}`));
+            toast.success("店舗を削除しました");
+            if (editingStore?.id === storeId) {
+                setEditingStore(null);
+                setFormStep(1);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("削除に失敗しました");
+        }
+    };
+
+    const handleDeleteGenre = async (genreId: string) => {
+        if (!window.confirm("このジャンルを削除してもよろしいですか？")) return;
+        try {
+            await remove(dbRef(db, `genres/${genreId}`));
+            toast.success("ジャンルを削除しました");
+            if (editingGenre?.id === genreId) {
+                setEditingGenre(null);
+            }
+        } catch (e) {
+            console.error(e);
+            toast.error("削除に失敗しました");
         }
     };
 
@@ -127,20 +221,23 @@ export function AdminPanel({
                     if (placeId) {
                         service.getDetails({ placeId, fields: ["photos"] }, (place: google.maps.places.PlaceResult | null, detailStatus: google.maps.places.PlacesServiceStatus) => {
                             if (detailStatus === placesLib.PlacesServiceStatus.OK && place?.photos) {
-                                const urls = place.photos.map((p: google.maps.places.PlacePhoto) => p.getUrl({ maxWidth: 1000, maxHeight: 800 }));
+                                // Important: Use maxWidth/maxHeight to get high-res URLs that are more stable
+                                const urls = place.photos.map((p: google.maps.places.PlacePhoto) => p.getUrl({ maxWidth: 1200, maxHeight: 1000 }));
                                 setGooglePhotos(urls);
+                                toast.success(`${urls.length}枚の写真を見つけました`);
                             } else {
-                                alert("写真が見つかりませんでした");
+                                toast.error("写真が見つかりませんでした");
                             }
                         });
                     }
                 } else {
-                    alert("店舗が見つかりませんでした");
+                    toast.error("店舗が見つかりませんでした");
                 }
                 setIsUploadingLogo(false);
             });
         } catch (e) {
             console.error(e);
+            toast.error("エラーが発生しました");
             setIsUploadingLogo(false);
         }
     };
@@ -199,7 +296,7 @@ export function AdminPanel({
                                     <span className="font-bold text-[10px] md:text-xs truncate max-w-[120px]">{store.nameJP}</span>
                                     <div className="flex gap-1">
                                         <button onClick={() => { setEditingStore(store); setGooglePhotos([]); setFormStep(2); }} className="p-1.5 bg-white text-blue-500 rounded-lg shadow-sm hover:text-blue-600"><Edit2 size={12} /></button>
-                                        <button onClick={() => { if (confirm("消去しますか？")) remove(dbRef(db, `stores/${store.id}`)); }} className="p-1.5 bg-white text-red-100 hover:text-red-500"><Trash2 size={12} /></button>
+                                        <button onClick={() => handleDeleteStore(store.id)} className="p-1.5 bg-white text-red-100 hover:text-red-500"><Trash2 size={12} /></button>
                                     </div>
                                 </div>
                             )) : activeTab === "genres" ? genres.map(genre => (
@@ -210,7 +307,7 @@ export function AdminPanel({
                                     </div>
                                     <div className="flex gap-1">
                                         <button onClick={() => setEditingGenre(genre)} className="p-1.5 bg-white text-blue-500 rounded-lg shadow-sm hover:text-blue-600"><Edit2 size={12} /></button>
-                                        <button onClick={() => { if (confirm("消去しますか？")) remove(dbRef(db, `genres/${genre.id}`)); }} className="p-1.5 bg-white text-red-100 hover:text-red-500"><Trash2 size={12} /></button>
+                                        <button onClick={() => handleDeleteGenre(genre.id)} className="p-1.5 bg-white text-red-100 hover:text-red-500"><Trash2 size={12} /></button>
                                     </div>
                                 </div>
                             )) : null}
@@ -230,15 +327,63 @@ export function AdminPanel({
                                         </div>
                                         <div className="flex gap-2">
                                             <button onClick={() => setEditingStore(null)} className="flex-1 md:flex-none px-4 md:px-6 py-3 rounded-xl bg-gray-100 font-black text-gray-500 text-xs md:text-sm">中止</button>
-                                            <button onClick={handleSaveStore} className="flex-1 md:flex-none px-6 md:px-12 py-3 rounded-xl bg-pink-400 text-white font-black shadow-lg text-xs md:text-sm flex items-center justify-center gap-2"><Save size={16} /> 保存</button>
+                                            <button
+                                                onClick={handleSaveStore}
+                                                disabled={isSaving}
+                                                className="flex-1 md:flex-none px-6 md:px-12 py-3 rounded-xl bg-pink-400 text-white font-black shadow-lg text-xs md:text-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                                                保存
+                                            </button>
                                         </div>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-5 gap-6 md:gap-12 pb-10">
                                         <div className="md:col-span-3 space-y-6">
-                                            <div className="space-y-3">
-                                                <input className="w-full p-3 md:p-4 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sm md:text-lg" placeholder="店名 (日)" value={editingStore.nameJP || ""} onChange={e => setEditingStore({ ...editingStore, nameJP: e.target.value })} />
-                                                <input className="w-full p-3 md:p-4 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sweet-brown/60 text-sm md:text-lg" placeholder="店名 (中)" value={editingStore.nameCH || ""} onChange={e => setEditingStore({ ...editingStore, nameCH: e.target.value })} />
-                                                <textarea className="w-full p-4 md:p-6 rounded-xl border-2 border-gray-100 h-32 md:h-48 resize-none focus:border-pink-200 outline-none font-medium text-xs md:text-sm leading-relaxed" placeholder="紹介文..." value={editingStore.descriptionJP || ""} onChange={e => setEditingStore({ ...editingStore, descriptionJP: e.target.value })} />
+                                            <div className="space-y-4">
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <input className="w-full p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sm" placeholder="店名 (日本語)" value={editingStore.nameJP || ""} onChange={e => setEditingStore({ ...editingStore, nameJP: e.target.value })} />
+                                                    <input className="w-full p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sweet-brown/60 text-sm" placeholder="店名 (中国語)" value={editingStore.nameCH || ""} onChange={e => setEditingStore({ ...editingStore, nameCH: e.target.value })} />
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="relative">
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium" placeholder="住所 (日本語)" value={editingStore.addressJP || ""} onChange={e => setEditingStore({ ...editingStore, addressJP: e.target.value })} />
+                                                        <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
+                                                    </div>
+                                                    <div className="relative">
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium text-sweet-brown/60" placeholder="住所 (中国語)" value={editingStore.addressCH || ""} onChange={e => setEditingStore({ ...editingStore, addressCH: e.target.value })} />
+                                                        <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300/60" size={14} />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="relative">
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium text-blue-600" placeholder="ホームページURL" value={editingStore.website || ""} onChange={e => setEditingStore({ ...editingStore, website: e.target.value })} />
+                                                        <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-blue-300" size={14} />
+                                                    </div>
+                                                    <div className="relative">
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium text-pink-600" placeholder="Instagram URL" value={editingStore.instagram || ""} onChange={e => setEditingStore({ ...editingStore, instagram: e.target.value })} />
+                                                        <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300" size={14} />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 gap-3">
+                                                    <div className="relative">
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-orange-100 focus:border-orange-200 outline-none text-xs font-medium text-orange-600" placeholder="「商品を購入する」リンクURL (購入ページ)" value={editingStore.buyUrl || ""} onChange={e => setEditingStore({ ...editingStore, buyUrl: e.target.value })} />
+                                                        <ShoppingBag className="absolute left-3 top-1/2 -translate-y-1/2 text-orange-300" size={14} />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">紹介文 (日本語)</p>
+                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed" placeholder="日本語で紹介を入力..." value={editingStore.descriptionJP || ""} onChange={e => setEditingStore({ ...editingStore, descriptionJP: e.target.value })} />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">紹介文 (中国語)</p>
+                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed text-sweet-brown/60" placeholder="中国語（繁体字）で紹介を入力..." value={editingStore.descriptionCH || ""} onChange={e => setEditingStore({ ...editingStore, descriptionCH: e.target.value })} />
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div className="p-4 md:p-8 bg-pastel-pink/5 rounded-2xl md:rounded-[2.5rem] border-2 border-pastel-pink/10">
                                                 <h3 className="text-[10px] font-black text-pink-400 uppercase tracking-widest mb-4 flex items-center gap-2"><Tag size={14} /> ジャンル (最大4)</h3>
@@ -338,7 +483,14 @@ export function AdminPanel({
                                     <h2 className="text-xl md:text-2xl font-black text-sweet-brown tracking-tighter">ジャンル編集</h2>
                                     <div className="flex gap-2">
                                         <button onClick={() => setEditingGenre(null)} className="px-4 py-3 rounded-xl bg-gray-100 font-black text-gray-500 text-xs md:text-sm">キャンセル</button>
-                                        <button onClick={handleSaveGenre} className="px-4 py-3 rounded-xl bg-pastel-blue text-blue-700 font-black shadow-lg text-xs md:text-sm">保存</button>
+                                        <button
+                                            onClick={handleSaveGenre}
+                                            disabled={isSaving}
+                                            className="px-4 py-3 rounded-xl bg-pastel-blue text-blue-700 font-black shadow-lg text-xs md:text-sm flex items-center gap-2 disabled:opacity-50"
+                                        >
+                                            {isSaving && <Loader2 size={16} className="animate-spin" />}
+                                            保存
+                                        </button>
                                     </div>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">

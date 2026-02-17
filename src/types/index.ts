@@ -12,6 +12,9 @@ export interface Store {
     customIconUrl?: string;
     addressJP?: string;
     addressCH?: string;
+    website?: string;
+    instagram?: string;
+    buyUrl?: string;
 }
 
 export interface Genre {

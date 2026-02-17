@@ -10,7 +10,7 @@
 }
 
 :root {
-  --background: #fff9f9;
+  --background: radial-gradient(circle at top left, #fff9f9 0%, #fff0f2 100%);
   --foreground: #5d4037;
 }
 

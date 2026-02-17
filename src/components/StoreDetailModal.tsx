@@ -1,7 +1,7 @@
 "use client";
 
 import { Store, UserStats } from "@/types";
-import { X, Heart, CheckCircle, MapPin, Youtube, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
+import { X, Heart, CheckCircle, MapPin, Youtube, ExternalLink, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Instagram, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
 
@@ -54,65 +54,94 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="relative bg-white w-full max-w-2xl max-h-[92vh] md:max-h-[90vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border-4 border-white"
+                    className="relative bg-white w-full max-w-lg max-h-[85vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border-4 border-white"
                 >
                     {/* Header Image Area */}
-                    <div className="relative h-48 md:h-80 bg-gray-100 flex-shrink-0">
-                        {store.images && store.images.length > 0 ? (
-                            <>
-                                <div
-                                    ref={scrollContainerRef}
-                                    onScroll={handleScroll}
-                                    className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none w-full h-full"
+                    <div className="relative h-48 md:h-64 bg-gray-100 flex-shrink-0 group overflow-hidden">
+                        <AnimatePresence mode="popLayout" initial={false}>
+                            {store.images && store.images.length > 0 ? (
+                                <motion.div
+                                    key={activeImageIndex}
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    exit={{ opacity: 0, x: -20 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                    className="absolute inset-0 bg-black flex items-center justify-center"
                                 >
-                                    {store.images.map((img, i) => {
-                                        if (!img || typeof img !== 'string') return null;
-                                        return (
-                                            <div key={i} className="flex-shrink-0 w-full h-full snap-center bg-black flex items-center justify-center overflow-hidden">
-                                                <img
-                                                    src={img}
-                                                    alt={`${store.nameJP} ${i + 1}`}
-                                                    className="w-full h-full object-cover"
-                                                    loading="lazy"
-                                                    referrerPolicy="no-referrer"
-                                                />
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                                {store.images.length > 1 && (
-                                    <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-4 pointer-events-none">
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); scrollToImage(activeImageIndex > 0 ? activeImageIndex - 1 : store.images.length - 1); }}
-                                            className="w-8 h-8 md:w-10 md:h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg text-sweet-brown hover:bg-white pointer-events-auto md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <ChevronLeft size={20} />
-                                        </button>
-                                        <button
-                                            onClick={(e) => { e.stopPropagation(); scrollToImage(activeImageIndex < store.images.length - 1 ? activeImageIndex + 1 : 0); }}
-                                            className="w-8 h-8 md:w-10 md:h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg text-sweet-brown hover:bg-white pointer-events-auto md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-                                        >
-                                            <ChevronRight size={20} />
-                                        </button>
+                                    <img
+                                        src={store.images[activeImageIndex]}
+                                        alt={`${store.nameJP} ${activeImageIndex + 1}`}
+                                        className="w-full h-full object-cover"
+                                        loading="lazy"
+                                        referrerPolicy="no-referrer"
+                                        onError={(e) => {
+                                            const target = e.target as HTMLImageElement;
+                                            // Prevent infinite loop if fallback also fails
+                                            if (target.src.includes('unsplash.com')) return;
+
+                                            // Professional food/sweet shop placeholder
+                                            target.src = "https://images.unsplash.com/photo-1559181567-c3190ca9959b?auto=format&fit=crop&q=80&w=800";
+                                            target.classList.add("opacity-60", "grayscale-[0.5]");
+                                            console.warn("Image load failed, using fallback:", store.nameJP);
+                                        }}
+                                    />
+                                </motion.div>
+                            ) : (
+                                <motion.div
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-3 bg-gradient-to-br from-white to-gray-50"
+                                >
+                                    <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center shadow-inner">
+                                        <ImageIcon size={32} className="text-gray-200" />
                                     </div>
-                                )}
-                                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 px-3 py-1.5 bg-black/20 backdrop-blur-sm rounded-full">
-                                    {store.images.map((_, i) => (
-                                        <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === activeImageIndex ? "bg-white w-4" : "bg-white/50"}`} />
-                                    ))}
-                                </div>
-                            </>
-                        ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-gray-300 gap-2">
-                                <MapPin size={48} strokeWidth={1} />
-                                <span className="text-xs font-bold uppercase tracking-widest">No Images Available</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No Store Images</span>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+
+                        {/* Premium Navigation Arrows */}
+                        {store.images && store.images.length > 1 && (
+                            <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveImageIndex(prev => prev > 0 ? prev - 1 : store.images.length - 1);
+                                    }}
+                                    className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.3)] text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border-2 border-white ring-1 ring-black/5"
+                                >
+                                    <ChevronLeft size={32} strokeWidth={3} />
+                                </button>
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveImageIndex(prev => prev < store.images.length - 1 ? prev + 1 : 0);
+                                    }}
+                                    className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.3)] text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border-2 border-white ring-1 ring-black/5"
+                                >
+                                    <ChevronRight size={32} strokeWidth={3} />
+                                </button>
                             </div>
                         )}
+
+                        {/* Page Indicators */}
+                        {store.images && store.images.length > 1 && (
+                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 px-3 py-2 bg-black/30 backdrop-blur-md rounded-2xl ring-1 ring-white/20">
+                                {store.images.map((_, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => setActiveImageIndex(i)}
+                                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === activeImageIndex ? "bg-white w-5" : "bg-white/40 hover:bg-white/60"}`}
+                                    />
+                                ))}
+                            </div>
+                        )}
+
                         <button
                             onClick={onClose}
-                            className="absolute top-4 right-4 w-10 h-10 md:w-12 md:h-12 bg-white/90 backdrop-blur rounded-2xl shadow-lg flex items-center justify-center text-sweet-brown hover:text-pink-500 transition-colors"
+                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 hover:rotate-90 transition-all duration-300 z-10"
                         >
-                            <X size={24} />
+                            <X size={24} strokeWidth={2.5} />
                         </button>
                     </div>
 
@@ -143,6 +172,41 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Description</h3>
                                 <p className="text-sweet-brown/80 leading-relaxed text-sm md:text-base font-medium whitespace-pre-wrap">{store.descriptionJP}</p>
+                            </div>
+                        )}
+
+                        {(store.website || store.instagram || store.buyUrl) && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                                {store.buyUrl && (
+                                    <a
+                                        href={store.buyUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full px-6 py-4 bg-orange-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-3 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-100 mb-2"
+                                    >
+                                        <ShoppingBag size={20} /> 商品を購入する
+                                    </a>
+                                )}
+                                {store.website && (
+                                    <a
+                                        href={store.website}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-colors"
+                                    >
+                                        <Globe size={14} /> Official Website
+                                    </a>
+                                )}
+                                {store.instagram && (
+                                    <a
+                                        href={store.instagram}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="px-4 py-2 bg-gradient-to-tr from-yellow-100 via-pink-100 to-purple-100 text-pink-600 rounded-xl text-xs font-black flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                    >
+                                        <Instagram size={14} /> Instagram
+                                    </a>
+                                )}
                             </div>
                         )}
 

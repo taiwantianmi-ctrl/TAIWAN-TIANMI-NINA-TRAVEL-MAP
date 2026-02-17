@@ -3,8 +3,11 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
+import { mapStyle } from "@/lib/mapStyles";
+import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 interface MapContainerProps {
     stores: Store[];
@@ -12,19 +15,33 @@ interface MapContainerProps {
     onStoreSelect: (store: Store) => void;
     userStats: { visited: string[]; favorites: string[] };
     isAdminMode?: boolean;
-    onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[] }) => void;
+    onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
 }
 
 export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
-    const inputRef = useRef<HTMLInputElement>(null);
+    const adminInputRef = useRef<HTMLInputElement>(null);
+    const [userSearchQuery, setUserSearchQuery] = useState("");
     const [tempPin, setTempPin] = useState<{ lat: number; lng: number } | null>(null);
     const [showTools, setShowTools] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
     const toolsTimerRef = useRef<NodeJS.Timeout | null>(null);
     const clusterer = useRef<MarkerClusterer | null>(null);
-    // Use a ref to track markers more reliably without causing extra renders
-    const markerElements = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
+    const markerElements = useRef<Record<string, google.maps.marker.AdvancedMarkerElement>>({});
+    const [isWhiteOut, setIsWhiteOut] = useState(false);
+    const [zoom, setZoom] = useState(7.8);
+    const [isTracking, setIsTracking] = useState(false);
+    const watchIdRef = useRef<number | null>(null);
+    const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+
+    const zoomToAll = useCallback(() => {
+        if (!map || stores.length === 0) return;
+        const bounds = new google.maps.LatLngBounds();
+        stores.forEach(store => bounds.extend({ lat: store.lat, lng: store.lng }));
+        map.fitBounds(bounds, { top: 120, bottom: 40, left: 40, right: 40 });
+        triggerTools();
+    }, [map, stores]);
 
     const triggerTools = (manualToggle = false) => {
         if (manualToggle) {
@@ -39,67 +56,159 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         }, 2000);
     };
 
+    const jumpWithTransition = useCallback((targetPos: { lat: number; lng: number }, targetZoom: number) => {
+        if (!map) return;
+
+        // Start white-out
+        setIsWhiteOut(true);
+
+        // After a very short delay (for the white-out to cover), perform the jump
+        setTimeout(() => {
+            map.setOptions({
+                center: targetPos,
+                zoom: targetZoom
+            });
+
+            // Fade out the white-out
+            setTimeout(() => {
+                setIsWhiteOut(false);
+            }, 300); // Hold white for 300ms
+        }, 300); // Transition in duration
+    }, [map]);
+
+    const smoothZoomTo = useCallback((targetPos: { lat: number; lng: number }, targetZoom: number) => {
+        if (!map) return;
+
+        const startZoom = map.getZoom() || 7;
+        const startCenter = map.getCenter();
+        if (!startCenter) return;
+
+        const startLat = startCenter.lat();
+        const startLng = startCenter.lng();
+
+        const zoomDiff = targetZoom - startZoom;
+        const latDiff = targetPos.lat - startLat;
+        const lngDiff = targetPos.lng - startLng;
+
+        const duration = 2000; // 2 seconds for a slow, premium feel
+        const frameRate = 60;
+        const totalFrames = (duration / 1000) * frameRate;
+        let frame = 0;
+
+        const animate = () => {
+            frame++;
+            const progress = frame / totalFrames;
+
+            // Cubic ease-in-out for the smoothest possible transition
+            const easing = progress < 0.5
+                ? 4 * progress * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+            if (frame <= totalFrames) {
+                map.setOptions({
+                    center: {
+                        lat: startLat + (latDiff * easing),
+                        lng: startLng + (lngDiff * easing)
+                    },
+                    zoom: startZoom + (zoomDiff * easing)
+                });
+                requestAnimationFrame(animate);
+            } else {
+                map.setOptions({
+                    center: targetPos,
+                    zoom: targetZoom
+                });
+            }
+        };
+
+        requestAnimationFrame(animate);
+    }, [map]);
+
     // Initialize Clusterer
     useEffect(() => {
         if (!map) return;
-        if (!clusterer.current) {
-            clusterer.current = new MarkerClusterer({
-                map,
-                renderer: {
-                    render: ({ count, position }) => {
-                        const div = document.createElement('div');
-                        div.className = "flex items-center justify-center";
-                        div.style.width = "48px";
-                        div.style.height = "48px";
-                        div.style.cursor = "pointer";
-                        div.style.transformStyle = "preserve-3d";
-                        div.style.webkitTransformStyle = "preserve-3d";
+        console.log("Initializing MarkerClusterer...");
 
-                        div.innerHTML = `
-                            <div style="position:relative; width:40px; height:40px; background:white; border-radius:50%; border:3px solid #FFC1CC; display:flex; align-items:center; justify-content:center; will-change:transform;">
-                                <div style="position:absolute; top:-6px; right:-6px; background:#5D4037; color:white; font-size:10px; font-weight:900; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:2px solid white; z-index:10;">
-                                    ${count}
-                                </div>
-                                <div style="font-size:16px;">🍬</div>
-                            </div>
-                        `;
-                        return new google.maps.marker.AdvancedMarkerElement({
-                            position,
-                            content: div,
-                        });
-                    }
-                },
-                onClusterClick: (event, cluster, map) => {
-                    // New idea for zoom: Fit the map to all markers within the cluster
-                    // This uses Google's optimized internal bounds calculation to avoid flickering
-                    if (cluster.markers && cluster.markers.length > 0) {
-                        const bounds = new google.maps.LatLngBounds();
-                        cluster.markers.forEach(m => {
-                            const pos = (m as google.maps.marker.AdvancedMarkerElement).position;
-                            if (pos) bounds.extend(pos);
-                        });
-                        map.fitBounds(bounds, 50); // padding 50px
-                        return false;
-                    }
+        const mc = new MarkerClusterer({
+            map,
+            // @ts-ignore
+            zoomOnClick: false,
+            renderer: {
+                render: ({ count, position }) => {
+                    const div = document.createElement('div');
+                    div.style.width = '40px';
+                    div.style.height = '40px';
+                    div.style.borderRadius = '50%';
+                    div.style.background = 'white';
+                    div.style.border = '3px solid #FFC1CC';
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+                    div.style.justifyContent = 'center';
+                    div.style.cursor = 'pointer';
+                    div.style.pointerEvents = 'auto';
+
+                    div.style.boxShadow = '0 4px 12px rgba(255, 193, 204, 0.4)';
+                    div.style.outline = 'none';
+                    div.style.isolation = 'isolate';
+                    div.style.setProperty("transition", "transform 0.2s ease-out");
+                    div.style.setProperty("-webkit-backface-visibility", "hidden");
+                    div.style.backfaceVisibility = "hidden";
+
+                    div.innerHTML = `
+                        <div style="position:absolute; top:-8px; right:-8px; background:#5D4037; color:white; font-size:10px; font-weight:900; width:20px; height:20px; border-radius:10px; display:flex; align-items:center; justify-content:center; border:2px solid white;">
+                            ${count}
+                        </div>
+                        <span style="font-size:18px; line-height:1;">🍬</span>
+                    `;
+
+                    div.onmouseenter = () => { div.style.transform = 'scale(1.1)'; };
+                    div.onmouseleave = () => { div.style.transform = 'scale(1.0)'; };
+
+                    return new google.maps.marker.AdvancedMarkerElement({
+                        position,
+                        content: div,
+                        zIndex: 2000,
+                        collisionBehavior: "REQUIRED" as any,
+                    });
                 }
-            });
+            },
+            onClusterClick: (event, cluster, map) => {
+                // Zoom functionality removed as requested
+                console.log("Cluster clicked:", cluster);
+            }
+        });
+
+        clusterer.current = mc;
+
+        // Add any markers that were already mounted
+        const initialMarkers = Object.values(markerElements.current) as google.maps.marker.AdvancedMarkerElement[];
+        if (initialMarkers.length > 0) {
+            console.log(`Adding ${initialMarkers.length} existing markers to clusterer.`);
+            mc.addMarkers(initialMarkers);
         }
-    }, [map]);
+
+        return () => {
+            console.log("Cleaning up MarkerClusterer");
+            mc.clearMarkers();
+            mc.setMap(null);
+            clusterer.current = null;
+        };
+    }, [map, jumpWithTransition]);
 
     // Use callback for marker mounting to handle lifecycle
     const onMarkerMount = useCallback((id: string, marker: google.maps.marker.AdvancedMarkerElement | null) => {
         if (marker) {
-            markerElements.current.set(id, marker);
+            markerElements.current[id] = marker;
             if (clusterer.current) {
                 clusterer.current.addMarkers([marker]);
             }
         } else {
-            const oldMarker = markerElements.current.get(id);
+            const oldMarker = markerElements.current[id];
             if (oldMarker) {
                 if (clusterer.current) {
                     clusterer.current.removeMarkers([oldMarker]);
                 }
-                markerElements.current.delete(id);
+                delete markerElements.current[id];
             }
         }
     }, []);
@@ -107,21 +216,37 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     // Ensure clusterer is synced if stores list changes
     useEffect(() => {
         if (clusterer.current) {
+            // First, remove markers that are no longer in the stores list
+            const currentStoreIds = new Set(stores.map(s => s.id));
+            const markersToRemove: google.maps.marker.AdvancedMarkerElement[] = [];
+
+            Object.keys(markerElements.current).forEach(id => {
+                if (!currentStoreIds.has(id)) {
+                    markersToRemove.push(markerElements.current[id]);
+                    delete markerElements.current[id];
+                }
+            });
+
+            if (markersToRemove.length > 0) {
+                clusterer.current.removeMarkers(markersToRemove);
+            }
+
+            // Then, clear and re-add all active markers to be safe and ensure sync
             clusterer.current.clearMarkers();
-            const activeMarkers = Array.from(markerElements.current.values());
+            const activeMarkers = Object.values(markerElements.current) as google.maps.marker.AdvancedMarkerElement[];
             clusterer.current.addMarkers(activeMarkers);
         }
     }, [stores]);
 
     useEffect(() => {
-        if (!placesLib || !inputRef.current || !map || !isAdminMode) return;
+        if (!placesLib || !adminInputRef.current || !map || !isAdminMode) return;
 
         const options = {
             fields: ["name", "geometry", "photos", "formatted_address"],
             componentRestrictions: { country: "tw" },
         };
 
-        const ac = new placesLib.Autocomplete(inputRef.current, options);
+        const ac = new placesLib.Autocomplete(adminInputRef.current, options);
         ac.bindTo("bounds", map);
 
         ac.addListener("place_changed", () => {
@@ -137,33 +262,70 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             map.setZoom(17);
 
             if (onLocationSelect) {
-                onLocationSelect({ lat, lng, name: place.name, photos });
+                onLocationSelect({
+                    lat,
+                    lng,
+                    name: place.name,
+                    photos,
+                    address: place.formatted_address
+                });
             }
         });
     }, [placesLib, map, isAdminMode, onLocationSelect]);
 
-    const locateMe = () => {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
+    const filteredStoreResults = useMemo(() => {
+        if (!userSearchQuery) return [];
+        return stores.filter(s =>
+            s.nameJP.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+            s.nameCH.toLowerCase().includes(userSearchQuery.toLowerCase())
+        ).slice(0, 5);
+    }, [userSearchQuery, stores]);
+
+    const toggleTracking = () => {
+        if (!navigator.geolocation) {
+            alert("お使いのブラウザは位置情報をサポートしていません。");
+            return;
+        }
+
+        if (isTracking) {
+            if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+                watchIdRef.current = null;
+            }
+            setIsTracking(false);
+            toast.success("現在地の追跡を停止しました");
+        } else {
+            setIsTracking(true);
+            toast.success("現在地の追跡を開始しました");
+
+            watchIdRef.current = navigator.geolocation.watchPosition(
                 (position) => {
-                    if (map) {
-                        map.panTo({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        });
-                        map.setZoom(16);
+                    const newPos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+                    setUserLocation(newPos);
+                    if (map && isTracking) {
+                        map.panTo(newPos);
                     }
                 },
                 (error) => {
                     console.error("Geolocation error:", error);
-                    alert("現在地の取得に失敗しました。ブラウザの位置情報設定を確認してください。");
+                    setIsTracking(false);
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
-        } else {
-            alert("お使いのブラウザは位置情報をサポートしていません。");
         }
     };
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (watchIdRef.current !== null) {
+                navigator.geolocation.clearWatch(watchIdRef.current);
+            }
+        };
+    }, []);
 
     const panMap = (dx: number, dy: number) => {
         if (map) {
@@ -181,36 +343,94 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     };
 
     return (
-        <div className="w-full h-full relative bg-white">
-            {/* Admin Search Overlay */}
-            {isAdminMode && (
-                <div className="absolute top-20 md:top-4 left-1/2 -translate-x-1/2 z-[20] w-full max-w-md px-4 pointer-events-none">
-                    <div className="bg-white/95 backdrop-blur-md p-1.5 rounded-2xl shadow-2xl border-4 border-white flex items-center gap-2 pointer-events-auto ring-1 ring-black/5">
-                        <div className="flex-1 relative">
+        <div className="w-full h-full relative bg-white overflow-hidden rounded-[2.5rem]">
+            {/* User Search Bar - Moved to top-left and slimmed down */}
+            {!isAdminMode && (
+                <div className="absolute top-4 left-4 z-[50] w-[calc(100%-2rem)] max-w-[280px] pointer-events-none">
+                    <div className="bg-white/90 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-white/50 flex flex-col pointer-events-auto transition-all">
+                        <div className="flex items-center gap-2 px-2">
+                            <Search className="text-pink-400 shrink-0" size={16} />
                             <input
-                                ref={inputRef}
-                                className="w-full p-3 pl-10 rounded-xl bg-gray-50 border-none outline-none text-sm font-bold text-sweet-brown placeholder-gray-400 focus:ring-2 focus:ring-pink-200"
-                                placeholder="お店を検索してピンを立てる..."
+                                value={userSearchQuery}
+                                onChange={(e) => {
+                                    setUserSearchQuery(e.target.value);
+                                    setShowSearchResults(true);
+                                }}
+                                onFocus={() => setShowSearchResults(true)}
+                                className="w-full py-2 h-9 bg-transparent border-none outline-none text-xs font-bold text-sweet-brown placeholder-gray-400"
+                                placeholder="お店の名前で検索..."
                             />
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-400" size={18} />
+                            {userSearchQuery && (
+                                <button onClick={() => { setUserSearchQuery(""); setShowSearchResults(false); }} className="p-1 text-gray-400 hover:text-pink-500 transition-colors">
+                                    <X size={14} />
+                                </button>
+                            )}
                         </div>
+
+                        <AnimatePresence>
+                            {showSearchResults && filteredStoreResults.length > 0 && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden border-t border-gray-100/50"
+                                >
+                                    <div className="py-2">
+                                        {filteredStoreResults.map(s => (
+                                            <button
+                                                key={s.id}
+                                                onClick={() => {
+                                                    map?.panTo({ lat: s.lat, lng: s.lng });
+                                                    map?.setZoom(17);
+                                                    onStoreSelect(s);
+                                                    setShowSearchResults(false);
+                                                }}
+                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-pink-50 transition-colors text-left"
+                                            >
+                                                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-sm border border-pink-50">
+                                                    {getGenreInfo(s).icon}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <div className="text-sm font-black text-sweet-brown">{s.nameJP}</div>
+                                                    <div className="text-[10px] text-gray-400 font-bold">{s.nameCH}</div>
+                                                </div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            )}
+
+            {/* Admin Search */}
+            {isAdminMode && (
+                <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] w-[calc(100%-2rem)] max-w-md pointer-events-none">
+                    <div className="bg-white/95 backdrop-blur-md p-2 rounded-2xl shadow-2xl border-4 border-white flex items-center gap-2 pointer-events-auto">
+                        <input
+                            ref={adminInputRef}
+                            className="w-full p-3 pl-10 rounded-xl bg-gray-50 border-none outline-none text-sm font-bold text-sweet-brown placeholder-gray-400 focus:ring-2 focus:ring-pink-200"
+                            placeholder="お店を検索してピンを立てる..."
+                        />
+                        <Search className="absolute left-5 text-pink-400" size={18} />
                     </div>
                 </div>
             )}
 
             <Map
-                defaultCenter={{ lat: 23.8, lng: 120.95 }}
-                defaultZoom={7}
+                defaultCenter={{ lat: 23.6, lng: 121.0 }}
+                defaultZoom={7.8}
+                onZoomChanged={(e) => setZoom(e.detail.zoom)}
                 mapId={"bf51a910020faedc"}
-                disableDefaultUI={true} // カスタマイズのため一度無効化
-                streetViewControl={true}
-                streetViewControlOptions={{ position: 9 }} // BOTTOM_RIGHT
-                clickableIcons={false}
-                className="w-full h-full rounded-3xl overflow-hidden"
+                disableDefaultUI={true}
+                gestureHandling={"greedy"}
+                styles={mapStyle}
+                className="w-full h-full"
                 onClick={(e) => {
+                    setShowSearchResults(false);
                     if (isAdminMode && e.detail.latLng && onLocationSelect) {
-                        const lat = e.detail.latLng.lat;
-                        const lng = e.detail.latLng.lng;
+                        const { lat, lng } = e.detail.latLng;
                         setTempPin({ lat, lng });
                         onLocationSelect({ lat, lng });
                     }
@@ -218,105 +438,118 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             >
                 {stores.map((store) => {
                     const info = getGenreInfo(store);
+                    const isFav = userStats.favorites.includes(store.id);
+                    const isVis = userStats.visited.includes(store.id);
+
                     return (
                         <AdvancedMarker
                             key={store.id}
                             position={{ lat: store.lat, lng: store.lng }}
                             ref={(marker) => onMarkerMount(store.id, marker)}
-                            onClick={() => onStoreSelect(store)}
+                            zIndex={100}
                         >
-                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <div
+                                onClick={() => onStoreSelect(store)}
+                                className="relative group cursor-pointer transition-all hover:scale-125 active:scale-95 duration-300"
+                                style={{
+                                    pointerEvents: 'auto',
+                                    transform: `scale(${zoom <= 9 ? 0.7 : zoom <= 11 ? 0.85 : zoom <= 13 ? 1.0 : zoom <= 15 ? 1.25 : 1.5})`
+                                }}
+                            >
+                                {/* Visited Checkmark Badge */}
+                                {isVis && (
+                                    <div className="absolute -top-1 -right-1 z-10 w-4 h-4 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white">
+                                        ✓
+                                    </div>
+                                )}
+                                {/* Favorite Heart Badge */}
+                                {isFav && (
+                                    <motion.div
+                                        animate={{ scale: [1, 1.2, 1] }}
+                                        transition={{ repeat: Infinity, duration: 2 }}
+                                        className="absolute -top-1 -left-1 z-10 w-4 h-4 bg-pink-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white shadow-sm"
+                                    >
+                                        ❤
+                                    </motion.div>
+                                )}
+
                                 <div
-                                    style={{
-                                        backgroundColor: info.color,
-                                        width: '32px',
-                                        height: '32px',
-                                        borderRadius: '50%',
-                                        border: '2px solid white',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '16px'
-                                    }}
+                                    style={{ backgroundColor: info.color }}
+                                    className="w-10 h-10 rounded-full border-4 border-white shadow-lg flex items-center justify-center text-lg"
                                 >
                                     {info.icon}
                                 </div>
-                                <div
-                                    style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        backgroundColor: 'white',
-                                        padding: '1px 4px',
-                                        borderRadius: '4px',
-                                        fontSize: '9px',
-                                        fontWeight: 'bold',
-                                        whiteSpace: 'nowrap',
-                                        marginTop: '1px',
-                                        border: '1px solid #eee'
-                                    }}
-                                >
-                                    {store.nameJP}
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 bg-white/90 backdrop-blur-sm border border-gray-100 rounded-md shadow-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                    <div className="text-[10px] font-black text-sweet-brown">{store.nameJP}</div>
                                 </div>
                             </div>
                         </AdvancedMarker>
                     );
                 })}
 
-                {/* Temporary User Selection Pin */}
                 {isAdminMode && tempPin && (
                     <AdvancedMarker position={tempPin}>
                         <div className="relative animate-bounce">
-                            <MapPin className="text-pink-600 fill-pink-200" size={40} />
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-pink-600 text-white text-[10px] font-black px-2 py-1 rounded whitespace-nowrap shadow-xl">
-                                新しい店舗
-                            </div>
+                            <MapPin className="text-pink-600 fill-pink-200" size={44} />
                         </div>
                     </AdvancedMarker>
                 )}
             </Map>
 
-            {/* Map Controls - Vertical Stack on the Right */}
-            <div className="absolute bottom-24 right-4 flex flex-col items-center gap-3 z-[30] pointer-events-none">
-                {/* Main Movement/Tools Group - Now on Top */}
-                <div className="flex flex-col items-center gap-2 pointer-events-auto">
-                    {/* Expandable Tools - Cross Keys and Zoom */}
-                    <div className={`transition-all duration-500 flex flex-col items-center gap-2 ${showTools ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 translate-y-8 scale-90 pointer-events-none'}`}>
-                        {/* Directional Pad */}
-                        <div className="grid grid-cols-3 gap-1 bg-white/50 backdrop-blur-sm p-2 rounded-2xl border-2 border-white shadow-lg">
-                            <div />
-                            <button onClick={() => panMap(0, -100)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronUp size={20} /></button>
-                            <div />
-                            <button onClick={() => panMap(-100, 0)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronLeft size={20} /></button>
-                            <div className="flex flex-col gap-1">
-                                <button onClick={() => { map?.setZoom((map.getZoom() || 0) + 1); triggerTools(); }} className="w-10 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-pink-500 hover:bg-pink-100"><Plus size={16} /></button>
-                                <button onClick={() => { map?.setZoom((map.getZoom() || 0) - 1); triggerTools(); }} className="w-10 h-8 bg-pink-50 rounded-lg flex items-center justify-center text-pink-500 hover:bg-pink-100"><Minus size={16} /></button>
-                            </div>
-                            <button onClick={() => panMap(100, 0)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronRight size={20} /></button>
-                            <div />
-                            <button onClick={() => panMap(0, 100)} className="w-10 h-10 bg-white rounded-xl shadow-md flex items-center justify-center text-gray-400 hover:text-pink-400 border-2 border-white"><ChevronDown size={20} /></button>
-                            <div />
-                        </div>
-                    </div>
+            {/* Premium Map Controls */}
+            <div className="absolute bottom-6 right-6 flex flex-col items-center gap-4 z-[40]">
+                {/* Tools Stack */}
+                <div className="flex flex-col items-center gap-3">
+                    <AnimatePresence>
+                        {showTools && (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                                className="flex flex-col gap-2 p-2 bg-white/60 backdrop-blur-xl rounded-[2rem] border-2 border-white shadow-2xl overflow-hidden"
+                            >
+                                <button onClick={() => map?.setZoom((map.getZoom() || 0) + 1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
+                                    <Plus size={24} strokeWidth={2.5} />
+                                </button>
+                                <button onClick={() => map?.setZoom((map.getZoom() || 0) - 1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
+                                    <Minus size={24} strokeWidth={2.5} />
+                                </button>
+                                <div className="h-px bg-white/50 mx-2" />
+                                <button onClick={zoomToAll} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-600 hover:text-pink-500 transition-colors" title="全ピンを表示">
+                                    <Maximize size={20} />
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                    {/* Movement/Trigger Icon */}
                     <button
                         onClick={() => triggerTools(true)}
-                        className={`w-14 h-14 rounded-3xl shadow-2xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white rotate-45' : 'bg-white text-gray-500 shadow-pink-100'}`}
-                        title="画面移動・操作パネルを表示"
+                        className={`w-16 h-16 rounded-[2rem] shadow-2xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white rotate-90 ' : 'bg-white text-gray-500 shadow-pink-100'}`}
                     >
-                        <Move size={24} />
+                        <Move size={28} />
+                    </button>
+
+                    <button
+                        onClick={toggleTracking}
+                        className={`w-14 h-14 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${isTracking ? 'bg-blue-500 text-white shadow-blue-100' : 'bg-white/90 text-gray-500 hover:text-pink-500'}`}
+                        title={isTracking ? "追跡停止" : "現在地を追跡"}
+                    >
+                        <Navigation size={24} className={isTracking ? "animate-pulse" : ""} />
                     </button>
                 </div>
-
-                {/* Locate Me - Now on Bottom */}
-                <button
-                    onClick={locateMe}
-                    className="w-12 h-12 bg-white rounded-2xl shadow-xl flex items-center justify-center text-gray-500 hover:text-pink-500 transition-all pointer-events-auto border-4 border-white hover:scale-110 active:scale-95"
-                    title="現在地を表示"
-                >
-                    <Navigation size={20} />
-                </button>
             </div>
+
+            {/* White-out for transitions */}
+            <AnimatePresence>
+                {isWhiteOut && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 bg-white z-[100] pointer-events-none"
+                    />
+                )}
+            </AnimatePresence>
         </div>
     );
 }

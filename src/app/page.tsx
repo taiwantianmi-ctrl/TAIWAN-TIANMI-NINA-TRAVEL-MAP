@@ -192,15 +192,41 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="h-screen w-full flex flex-col items-center justify-center bg-pastel-pink/10">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ repeat: Infinity, duration: 2 }}
-          className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-lg border-4 border-pastel-pink text-pink-400"
-        >
-          <Heart fill="currentColor" size={32} />
-        </motion.div>
-        <p className="mt-4 font-bold text-sweet-brown tracking-widest animate-pulse">読み込み中...</p>
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#FFF9F9] relative overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-pastel-pink/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-pastel-blue/10 rounded-full blur-3xl animate-pulse" />
+
+        <div className="relative z-10 flex flex-col items-center">
+          <motion.div
+            animate={{
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            }}
+            transition={{
+              repeat: Infinity,
+              duration: 3,
+              ease: "easeInOut"
+            }}
+            className="w-24 h-24 bg-white rounded-[2rem] shadow-[0_20px_50px_rgba(255,193,204,0.3)] flex items-center justify-center border-4 border-pastel-pink text-pink-400 mb-8"
+          >
+            <Heart fill="currentColor" size={40} />
+          </motion.div>
+
+          <div className="flex flex-col items-center gap-2">
+            <h2 className="text-xl font-black text-sweet-brown tracking-tighter">台湾の甘い旅</h2>
+            <div className="flex gap-1">
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ opacity: [0.3, 1, 0.3] }}
+                  transition={{ repeat: Infinity, duration: 1, delay: i * 0.2 }}
+                  className="w-2 h-2 bg-pastel-pink rounded-full"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -289,6 +315,7 @@ export default function Home() {
                 lat: loc.lat,
                 lng: loc.lng,
                 nameJP: loc.name || editingStore?.nameJP || "",
+                addressJP: loc.address || editingStore?.addressJP || "",
               };
               setEditingStore(newStore);
               if (loc.photos) setGooglePhotos(loc.photos);
@@ -296,13 +323,6 @@ export default function Home() {
             }
           }}
         />
-      </div>
-
-      {/* Footer / Hint */}
-      <div className="absolute bottom-10 left-1/2 -translate-x-1/2 pointer-events-none hidden md:block">
-        <div className="bg-sweet-brown/80 backdrop-blur text-white px-6 py-2 rounded-full text-[10px] font-bold flex items-center gap-2 shadow-2xl uppercase tracking-widest border border-white/20">
-          <Info size={14} /> Tap a pin to see the sweets!
-        </div>
       </div>
 
       {/* Modals */}
@@ -329,20 +349,16 @@ export default function Home() {
         )
       }
 
-      {/* Hidden Admin Trigger */}
-      <motion.div
-        className="fixed bottom-6 left-6 z-[60] pointer-events-auto"
-        whileHover={{ y: -5 }}
-        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-      >
+      {/* Admin Trigger (Bottom Left, Hidden) */}
+      <div className="fixed bottom-6 left-6 z-[60] w-12 h-12 pointer-events-none">
         <button
           onClick={() => setShowAdmin(true)}
-          className="w-10 h-10 rounded-full bg-transparent border border-transparent flex items-center justify-center text-transparent hover:text-gray-300 hover:bg-white/10 hover:border-white/20 transition-all duration-300"
-          title="Admin Settings"
+          className="w-full h-full rounded-full bg-transparent pointer-events-auto cursor-default opacity-0 hover:opacity-100 hover:bg-white/1 flex items-center justify-center text-transparent hover:text-gray-300 transition-all duration-500"
+          title="Admin"
         >
-          <Settings size={16} />
+          <Settings size={14} />
         </button>
-      </motion.div>
+      </div>
     </main >
   );
 }
