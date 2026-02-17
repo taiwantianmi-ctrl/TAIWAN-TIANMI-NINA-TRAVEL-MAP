@@ -1,7 +1,7 @@
 {
   "name": "台湾甜蜜MAP",
   "short_name": "台湾甜蜜MAP",
-  "description": "台湾の菓子店巡りを楽しむための地図アプリ",
+  "description": "台湾の菓子店巡りを楽しむための地図アプリ | Taiwan Sweets Journey",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",

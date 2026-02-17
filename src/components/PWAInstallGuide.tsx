@@ -63,7 +63,7 @@ export function PWAInstallGuide() {
 
                         <div className="space-y-6">
                             <p className="text-sm font-medium text-sweet-brown/80 leading-relaxed">
-                                ホーム画面に追加すると、フルスクリーンでサクサク快適に動作します！
+                                スマホのホーム画面に追加すると、すぐに旅を再開できるよ！
                             </p>
 
                             <div className="bg-gray-50 rounded-3xl p-5 space-y-4">

@@ -29,7 +29,7 @@ export const viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "台湾甜蜜MAP",
+  title: "台湾甜蜜MAP | Taiwan Sweets Journey",
   description: "台湾の菓子店巡りを楽しむための地図アプリ",
   manifest: "/manifest.json",
   appleWebApp: {

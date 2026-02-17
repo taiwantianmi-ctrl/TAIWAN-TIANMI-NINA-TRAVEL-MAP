@@ -252,7 +252,7 @@ export default function Home() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">台湾甜蜜MAP</h1>
-                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweet Journey</p>
+                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweets Journey</p>
                 </div>
               </motion.div>
 
