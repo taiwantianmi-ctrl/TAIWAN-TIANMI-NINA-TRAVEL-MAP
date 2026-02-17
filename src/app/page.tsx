@@ -251,7 +251,7 @@ export default function Home() {
                   <Plane size={24} className="md:w-6 md:h-6" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">台湾の甘い旅</h1>
+                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">台湾甜蜜MAP</h1>
                   <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweet Journey</p>
                 </div>
               </motion.div>
