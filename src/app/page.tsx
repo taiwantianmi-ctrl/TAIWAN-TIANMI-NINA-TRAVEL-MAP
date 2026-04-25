@@ -267,11 +267,11 @@ export default function Home() {
                 className="px-2 md:px-4 py-1 flex items-center gap-3 md:gap-4 hover:opacity-70 transition-opacity"
                 onClick={resetApp}
               >
-                <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-xl md:rounded-2xl shadow-sm border-2 border-white overflow-hidden shrink-0 flex items-center justify-center">
+                <div className="w-24 h-24 md:w-28 md:h-28 bg-white rounded-xl md:rounded-2xl shadow-sm border-2 border-white overflow-hidden shrink-0 flex items-center justify-center">
                   <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">ニーナの台湾甜蜜MAP</h1>
+                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">ニーナの「台湾甜蜜」マップ</h1>
                   <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweets Journey</p>
                 </div>
               </motion.div>

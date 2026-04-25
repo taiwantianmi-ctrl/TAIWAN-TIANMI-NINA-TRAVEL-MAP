@@ -541,7 +541,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                         title="YouTubeで見る"
                                                     />
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[0]}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoIds.join(',')}&vq=hd720`}
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[0]}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoIds.join(',')}&vq=hd720`}
                                                         className="w-full h-full pointer-events-none"
                                                         allow="autoplay"
                                                     />
