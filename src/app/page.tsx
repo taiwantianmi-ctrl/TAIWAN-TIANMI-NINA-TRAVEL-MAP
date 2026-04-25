@@ -235,7 +235,7 @@ export default function Home() {
           </motion.div>
 
           <div className="flex flex-col items-center gap-2">
-            <h2 className="text-xl font-black text-sweet-brown tracking-tighter">台湾の甘い旅</h2>
+            <h2 className="text-xl font-black text-sweet-brown tracking-tighter">Nina's Sweet Travel Map</h2>
             <div className="flex gap-1">
               {[0, 1, 2].map((i) => (
                 <motion.div
@@ -272,7 +272,7 @@ export default function Home() {
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">ニーナの「台湾甜蜜」マップ</h1>
-                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweets Journey</p>
+                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Nina's Taiwan sweets journey</p>
                 </div>
               </motion.div>
 
