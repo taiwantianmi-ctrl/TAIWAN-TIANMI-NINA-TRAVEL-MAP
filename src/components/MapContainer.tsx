@@ -524,7 +524,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
                                             exit={{ opacity: 0, y: 10, scale: 0.9 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-48 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
+                                            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
@@ -544,16 +544,18 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                 </div>
                                             ) : null}
 
-                                            <button 
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setActivePopup(null);
-                                                    onStoreSelect(store);
-                                                }}
-                                                className="w-full py-2.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[11px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
-                                            >
-                                                お店に入る ➔
-                                            </button>
+                                            <div className="flex justify-center mt-2">
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setActivePopup(null);
+                                                        onStoreSelect(store);
+                                                    }}
+                                                    className="w-[134px] py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[9px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
+                                                >
+                                                    お店に入る ➔
+                                                </button>
+                                            </div>
                                         </motion.div>
                                     )}
                                 </AnimatePresence>

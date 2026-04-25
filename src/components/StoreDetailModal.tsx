@@ -164,7 +164,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                 className={`flex-1 min-w-[120px] py-3 md:py-4 rounded-2xl md:rounded-3xl border-2 font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${isVisited ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-100" : "bg-white border-orange-100 text-orange-500 hover:bg-orange-50"}`}
                             >
                                 <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
-                                {isVisited ? "訪問済み！" : "行った！"}
+                                {isVisited ? "行きたいリスト追加済！" : "行ってみたい！"}
                             </button>
                         </div>
 
