@@ -34,7 +34,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const [isTracking, setIsTracking] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
+    const [activePopup, setActivePopup] = useState<{ storeId: string, videoIds: string[], imageUrl: string | null } | null>(null);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
@@ -46,21 +46,21 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         // もし既にこの店舗のポップアップが開いていれば再生成しない（動画が切り替わらないように）
         if (activePopup?.storeId === store.id) return;
 
-        let videoId = null;
+        let videoIds: string[] = [];
         let imageUrl = null;
 
-        const validVideos = store.videos?.filter(v => getYouTubeId(v)) || [];
+        const validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id) as string[] || [];
         if (validVideos.length > 0) {
-            // ランダムに動画を選択
-            const randIdx = Math.floor(Math.random() * validVideos.length);
-            videoId = getYouTubeId(validVideos[randIdx]);
+            // シャッフルして最大4つ取得
+            const shuffled = [...validVideos].sort(() => 0.5 - Math.random());
+            videoIds = shuffled.slice(0, 4);
         } else if (store.images && store.images.length > 0) {
             // ランダムに画像を選択
             const randIdx = Math.floor(Math.random() * store.images.length);
             imageUrl = store.images[randIdx];
         }
 
-        setActivePopup({ storeId: store.id, videoId, imageUrl });
+        setActivePopup({ storeId: store.id, videoIds, imageUrl });
     }, [activePopup?.storeId]);
 
     const zoomToAll = useCallback(() => {
@@ -530,11 +530,19 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
                                             
                                             {/* ランダム選択されたメディアを表示 */}
-                                            {activePopup.videoId ? (
-                                                <div className="aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner pointer-events-none">
+                                            {activePopup.videoIds && activePopup.videoIds.length > 0 ? (
+                                                <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
+                                                    <a 
+                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoIds[0]}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="absolute inset-0 z-10"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        title="YouTubeで見る"
+                                                    />
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoId}&vq=hd720`}
-                                                        className="w-full h-full"
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[0]}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoIds.join(',')}&vq=hd720`}
+                                                        className="w-full h-full pointer-events-none"
                                                         allow="autoplay"
                                                     />
                                                 </div>
