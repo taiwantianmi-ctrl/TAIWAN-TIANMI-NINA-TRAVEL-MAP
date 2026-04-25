@@ -267,11 +267,11 @@ export default function Home() {
                 className="px-2 md:px-4 py-1 flex items-center gap-3 md:gap-4 hover:opacity-70 transition-opacity"
                 onClick={resetApp}
               >
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-pastel-pink rounded-xl md:rounded-2xl flex items-center justify-center shadow-sm text-white shrink-0">
-                  <Plane size={24} className="md:w-6 md:h-6" />
+                <div className="w-12 h-12 md:w-14 md:h-14 bg-white rounded-xl md:rounded-2xl shadow-sm border-2 border-white overflow-hidden shrink-0 flex items-center justify-center">
+                  <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">台湾甜蜜MAP</h1>
+                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">ニーナの台湾甜蜜MAP</h1>
                   <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Taiwan Sweets Journey</p>
                 </div>
               </motion.div>
@@ -294,17 +294,6 @@ export default function Home() {
             <div className="hidden md:block flex-1 pointer-events-auto">
               <GenreFilterUI isPC={true} />
             </div>
-          </div>
-
-          {/* Right: Shop Logo */}
-          <div className="pointer-events-auto self-start md:self-stretch flex items-center pr-2">
-            <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="w-20 h-20 md:w-32 md:h-32 bg-white rounded-3xl shadow-lg border-4 border-white overflow-hidden p-1 shrink-0"
-            >
-              <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
-            </motion.div>
           </div>
         </div>
 
