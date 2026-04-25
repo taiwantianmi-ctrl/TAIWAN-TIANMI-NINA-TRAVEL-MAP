@@ -69,7 +69,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                     className="absolute inset-0 bg-black flex items-center justify-center"
                                 >
                                     <img
-                                        src={store.images[activeImageIndex]}
+                                        src={store.images[activeImageIndex].includes('drive.google.com/uc') ? store.images[activeImageIndex].replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w1000') : store.images[activeImageIndex]}
                                         alt={`${store.nameJP} ${activeImageIndex + 1}`}
                                         className="w-full h-full object-cover"
                                         loading="lazy"

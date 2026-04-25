@@ -413,7 +413,7 @@ export function AdminPanel({
                                                 <div className="grid grid-cols-4 gap-2 mb-4">
                                                     {editingStore.images?.map((url, i) => (
                                                         <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-pink-100 group">
-                                                            <img src={url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                                            <img src={url.includes('drive.google.com/uc') ? url.replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w1000') : url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                                             <button
                                                                 onClick={() => setEditingStore({ ...editingStore, images: editingStore.images?.filter((_, idx) => idx !== i) })}
                                                                 className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100"
@@ -437,9 +437,15 @@ export function AdminPanel({
                                                             if (!manualImageUrl) return;
                                                             let url = manualImageUrl;
                                                             // Google Driveリンクを直接画像URLに変換
-                                                            const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-                                                            if (driveMatch && driveMatch[1]) {
-                                                                url = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+                                                            let driveId = "";
+                                                            const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                                                            const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+                                                            if (match1 && match1[1]) driveId = match1[1];
+                                                            else if (match2 && match2[1]) driveId = match2[1];
+                                                            
+                                                            if (driveId) {
+                                                                // 最近のGoogle Driveの仕様変更に対応するため、thumbnailエンドポイントを使用
+                                                                url = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
                                                             }
                                                             const current = editingStore.images || [];
                                                             if (current.length >= 4) {
