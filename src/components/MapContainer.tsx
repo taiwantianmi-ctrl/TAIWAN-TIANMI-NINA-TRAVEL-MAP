@@ -73,7 +73,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 const nextIdx = (prev.currentVideoIndex + 1) % prev.videoIds.length;
                 return { ...prev, currentVideoIndex: nextIdx };
             });
-        }, 12000); // 12秒ごとに次の動画へ切り替え
+        }, 8000); // 8秒ごとに次の動画へ切り替え（より短くスムースに）
 
         return () => clearInterval(interval);
     }, [activePopup?.storeId, activePopup?.videoIds?.length]);
@@ -551,16 +551,18 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                         href={`https://www.youtube.com/watch?v=${activePopup.videoIds[activePopup.currentVideoIndex]}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="absolute inset-0 z-10"
+                                                        className="absolute inset-0 z-20"
                                                         onClick={(e) => e.stopPropagation()}
                                                         title="YouTubeで見る"
                                                     />
-                                                    <iframe 
-                                                        key={activePopup.videoIds[activePopup.currentVideoIndex]} // keyを変えることで再レンダリングし強制再生
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[activePopup.currentVideoIndex]}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&vq=hd720`}
-                                                        className="w-full h-full pointer-events-none"
-                                                        allow="autoplay"
-                                                    />
+                                                    {activePopup.videoIds.map((vid, idx) => (
+                                                        <iframe 
+                                                            key={vid}
+                                                            src={`https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${vid}&vq=hd720`}
+                                                            className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-1000 ${idx === activePopup.currentVideoIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
+                                                            allow="autoplay"
+                                                        />
+                                                    ))}
                                                 </div>
                                             ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-xl overflow-hidden mb-2 shadow-inner">
