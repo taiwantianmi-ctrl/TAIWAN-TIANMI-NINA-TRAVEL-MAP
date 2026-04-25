@@ -34,13 +34,34 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const [isTracking, setIsTracking] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [activePopupStoreId, setActivePopupStoreId] = useState<string | null>(null);
+    const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
         const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/);
         return (match && match[2].length === 11) ? match[2] : null;
     };
+
+    const handleMarkerHover = useCallback((store: Store) => {
+        // もし既にこの店舗のポップアップが開いていれば再生成しない（動画が切り替わらないように）
+        if (activePopup?.storeId === store.id) return;
+
+        let videoId = null;
+        let imageUrl = null;
+
+        const validVideos = store.videos?.filter(v => getYouTubeId(v)) || [];
+        if (validVideos.length > 0) {
+            // ランダムに動画を選択
+            const randIdx = Math.floor(Math.random() * validVideos.length);
+            videoId = getYouTubeId(validVideos[randIdx]);
+        } else if (store.images && store.images.length > 0) {
+            // ランダムに画像を選択
+            const randIdx = Math.floor(Math.random() * store.images.length);
+            imageUrl = store.images[randIdx];
+        }
+
+        setActivePopup({ storeId: store.id, videoId, imageUrl });
+    }, [activePopup?.storeId]);
 
     const zoomToAll = useCallback(() => {
         if (!map || stores.length === 0) return;
@@ -456,13 +477,13 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             zIndex={100}
                         >
                             <div
-                                onMouseEnter={() => setActivePopupStoreId(store.id)}
-                                onMouseLeave={() => setActivePopupStoreId(null)}
+                                onMouseEnter={() => handleMarkerHover(store)}
+                                onMouseLeave={() => setActivePopup(null)}
                                 onClick={(e) => {
-                                    if (activePopupStoreId === store.id) {
+                                    if (activePopup?.storeId === store.id) {
                                         onStoreSelect(store);
                                     } else {
-                                        setActivePopupStoreId(store.id);
+                                        handleMarkerHover(store);
                                     }
                                 }}
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
@@ -497,7 +518,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                 
                                 {/* Interactive Popup */}
                                 <AnimatePresence>
-                                    {activePopupStoreId === store.id && (
+                                    {activePopup?.storeId === store.id && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -508,25 +529,25 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                         >
                                             <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
                                             
-                                            {/* 優先: YouTube動画 -> なければ画像 */}
-                                            {store.videos && store.videos.length > 0 && getYouTubeId(store.videos[0]) ? (
+                                            {/* ランダム選択されたメディアを表示 */}
+                                            {activePopup.videoId ? (
                                                 <div className="aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner pointer-events-none">
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${getYouTubeId(store.videos[0])}?autoplay=1&mute=1&controls=0&loop=1&playlist=${getYouTubeId(store.videos[0])}`}
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoId}`}
                                                         className="w-full h-full"
                                                         allow="autoplay"
                                                     />
                                                 </div>
-                                            ) : store.images && store.images.length > 0 ? (
+                                            ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-xl overflow-hidden mb-2 shadow-inner">
-                                                    <img src={store.images[0].includes('drive.google.com/uc') ? store.images[0].replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w600') : store.images[0]} className="w-full h-full object-cover" />
+                                                    <img src={activePopup.imageUrl.includes('drive.google.com/uc') ? activePopup.imageUrl.replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w600') : activePopup.imageUrl} className="w-full h-full object-cover" />
                                                 </div>
                                             ) : null}
 
                                             <button 
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    setActivePopupStoreId(null);
+                                                    setActivePopup(null);
                                                     onStoreSelect(store);
                                                 }}
                                                 className="w-full py-2.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[11px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
