@@ -494,7 +494,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             >
                                 {/* Visited Checkmark Badge */}
                                 {isVis && (
-                                    <div className="absolute -top-1 -right-1 z-10 w-4 h-4 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white">
+                                    <div className="absolute -top-1 -right-1 z-30 w-4 h-4 bg-orange-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white">
                                         ✓
                                     </div>
                                 )}
@@ -503,7 +503,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                     <motion.div
                                         animate={{ scale: [1, 1.2, 1] }}
                                         transition={{ repeat: Infinity, duration: 2 }}
-                                        className="absolute -top-1 -left-1 z-10 w-4 h-4 bg-pink-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white shadow-sm"
+                                        className="absolute -top-1 -left-1 z-30 w-4 h-4 bg-pink-500 rounded-full border-2 border-white flex items-center justify-center text-[8px] text-white shadow-sm"
                                     >
                                         ❤
                                     </motion.div>

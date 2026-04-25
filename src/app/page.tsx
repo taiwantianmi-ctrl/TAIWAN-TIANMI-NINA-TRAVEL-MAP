@@ -15,6 +15,7 @@ export default function Home() {
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+  const [showOnlyVisited, setShowOnlyVisited] = useState(false);
   const [userStats, setUserStats] = useState<UserStats>({ visited: [], favorites: [] });
   const [editingStore, setEditingStore] = useState<Partial<Store> | null>(null);
   const [googlePhotos, setGooglePhotos] = useState<string[]>([]);
@@ -69,15 +70,20 @@ export default function Home() {
 
   const resetApp = () => {
     setSelectedGenreIds([]);
+    setShowOnlyVisited(false);
     setSelectedStore(null);
     setShowAdmin(false);
     setEditingStore(null);
     setShowGenreFilter(false);
   };
 
-  const filteredStores = selectedGenreIds.length > 0
-    ? stores.filter(store => store.genres?.some(gId => selectedGenreIds.includes(gId)))
-    : stores;
+  let filteredStores = stores;
+  if (selectedGenreIds.length > 0) {
+    filteredStores = filteredStores.filter(store => store.genres?.some(gId => selectedGenreIds.includes(gId)));
+  }
+  if (showOnlyVisited) {
+    filteredStores = filteredStores.filter(store => userStats.visited.includes(store.id));
+  }
 
   // Common Genre Filter UI component to be reused
   const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
@@ -100,10 +106,17 @@ export default function Home() {
 
           <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
             <button
-              onClick={() => setSelectedGenreIds([])}
-              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white border-sweet-brown" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+              onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); }}
+              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white border-sweet-brown" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
             >
               すべて
+            </button>
+            <button
+              onClick={() => setShowOnlyVisited(!showOnlyVisited)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-white text-orange-500 hover:bg-orange-50 border-orange-100"}`}
+            >
+              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
+              行ってみたい！
             </button>
             {genres.map(genre => (
               <button
@@ -162,10 +175,17 @@ export default function Home() {
               >
                 <div className="p-3 md:p-4 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
                   <button
-                    onClick={() => { setSelectedGenreIds([]); setShowGenreFilter(false); }}
-                    className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                    onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); setShowGenreFilter(false); }}
+                    className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                   >
                     すべて表示
+                  </button>
+                  <button
+                    onClick={() => setShowOnlyVisited(!showOnlyVisited)}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm border ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-gray-50 text-orange-500 hover:bg-orange-50 border-orange-100"}`}
+                  >
+                    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
+                    行ってみたい！
                   </button>
                   {genres.map(genre => (
                     <button
@@ -264,7 +284,7 @@ export default function Home() {
                 </div>
                 <div className="whitespace-nowrap bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100 flex-shrink-0">
                   <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
-                  <span>行った！</span>
+                  <span>行ってみたい！</span>
                   <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
