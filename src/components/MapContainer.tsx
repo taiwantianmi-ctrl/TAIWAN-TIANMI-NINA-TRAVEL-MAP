@@ -34,7 +34,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const [isTracking, setIsTracking] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [activePopup, setActivePopup] = useState<{ storeId: string, videoIds: string[], currentVideoIndex: number, imageUrl: string | null } | null>(null);
+    const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
@@ -46,37 +46,22 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         // もし既にこの店舗のポップアップが開いていれば再生成しない（動画が切り替わらないように）
         if (activePopup?.storeId === store.id) return;
 
-        let videoIds: string[] = [];
+        let videoId: string | null = null;
         let imageUrl = null;
 
         const validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id) as string[] || [];
         if (validVideos.length > 0) {
-            // シャッフルして最大4つ取得
-            const shuffled = [...validVideos].sort(() => 0.5 - Math.random());
-            videoIds = shuffled.slice(0, 4);
+            // ランダムに1つだけ取得
+            const randIdx = Math.floor(Math.random() * validVideos.length);
+            videoId = validVideos[randIdx];
         } else if (store.images && store.images.length > 0) {
             // ランダムに画像を選択
             const randIdx = Math.floor(Math.random() * store.images.length);
             imageUrl = store.images[randIdx];
         }
 
-        setActivePopup({ storeId: store.id, videoIds, currentVideoIndex: 0, imageUrl });
+        setActivePopup({ storeId: store.id, videoId, imageUrl });
     }, [activePopup?.storeId]);
-
-    // 動画の自動ローテーション（YouTube APIを使わずに現在再生中の動画を把握するため）
-    useEffect(() => {
-        if (!activePopup || !activePopup.videoIds || activePopup.videoIds.length <= 1) return;
-        
-        const interval = setInterval(() => {
-            setActivePopup(prev => {
-                if (!prev) return prev;
-                const nextIdx = (prev.currentVideoIndex + 1) % prev.videoIds.length;
-                return { ...prev, currentVideoIndex: nextIdx };
-            });
-        }, 8000); // 8秒ごとに次の動画へ切り替え（より短くスムースに）
-
-        return () => clearInterval(interval);
-    }, [activePopup?.storeId, activePopup?.videoIds?.length]);
 
     const zoomToAll = useCallback(() => {
         if (!map || stores.length === 0) return;
@@ -545,24 +530,21 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
                                             
                                             {/* ランダム選択されたメディアを表示 */}
-                                            {activePopup.videoIds && activePopup.videoIds.length > 0 ? (
+                                            {activePopup.videoId ? (
                                                 <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
                                                     <a 
-                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoIds[activePopup.currentVideoIndex]}`}
+                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoId}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="absolute inset-0 z-20"
                                                         onClick={(e) => e.stopPropagation()}
                                                         title="YouTubeで見る"
                                                     />
-                                                    {activePopup.videoIds.map((vid, idx) => (
-                                                        <iframe 
-                                                            key={vid}
-                                                            src={`https://www.youtube.com/embed/${vid}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${vid}&vq=hd720`}
-                                                            className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-1000 ${idx === activePopup.currentVideoIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
-                                                            allow="autoplay"
-                                                        />
-                                                    ))}
+                                                    <iframe 
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=hd720`}
+                                                        className="w-full h-full pointer-events-none z-10"
+                                                        allow="autoplay"
+                                                    />
                                                 </div>
                                             ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-xl overflow-hidden mb-2 shadow-inner">
