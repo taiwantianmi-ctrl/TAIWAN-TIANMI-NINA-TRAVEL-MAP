@@ -51,6 +51,7 @@ export function AdminPanel({
     const [editingGenre, setEditingGenre] = useState<Partial<Genre> | null>(null);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [manualImageUrl, setManualImageUrl] = useState("");
 
     useEffect(() => {
         const passRef = dbRef(db, "admin/password");
@@ -422,6 +423,36 @@ export function AdminPanel({
                                                         </div>
                                                     ))}
                                                     {(!editingStore.images || editingStore.images.length === 0) && <div className="col-span-3 aspect-[3/1] rounded-xl border-2 border-dashed border-gray-100 flex items-center justify-center text-gray-300 text-[10px] font-black uppercase tracking-widest leading-none">未選択</div>}
+                                                </div>
+                                                <div className="flex gap-2 mb-4">
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Google Driveのリンクなどを入力..."
+                                                        className="flex-1 p-2 md:p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium"
+                                                        value={manualImageUrl}
+                                                        onChange={(e) => setManualImageUrl(e.target.value)}
+                                                    />
+                                                    <button
+                                                        onClick={() => {
+                                                            if (!manualImageUrl) return;
+                                                            let url = manualImageUrl;
+                                                            // Google Driveリンクを直接画像URLに変換
+                                                            const driveMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                                                            if (driveMatch && driveMatch[1]) {
+                                                                url = `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+                                                            }
+                                                            const current = editingStore.images || [];
+                                                            if (current.length >= 4) {
+                                                                toast.error("画像は最大4枚までです");
+                                                                return;
+                                                            }
+                                                            setEditingStore({ ...editingStore, images: [...current, url] });
+                                                            setManualImageUrl("");
+                                                        }}
+                                                        className="px-4 py-2 bg-pink-50 text-pink-600 rounded-xl text-xs font-black hover:bg-pink-100 transition-colors whitespace-nowrap"
+                                                    >
+                                                        追加
+                                                    </button>
                                                 </div>
                                                 <div className={`p-3 bg-blue-50/30 rounded-2xl border-2 border-blue-50 transition-all ${googlePhotos.length === 0 ? 'opacity-50 grayscale' : ''}`}>
                                                     {googlePhotos.length === 0 ? (
