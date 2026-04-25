@@ -34,7 +34,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const [isTracking, setIsTracking] = useState(false);
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-    const [activePopup, setActivePopup] = useState<{ storeId: string, videoIds: string[], imageUrl: string | null } | null>(null);
+    const [activePopup, setActivePopup] = useState<{ storeId: string, videoIds: string[], currentVideoIndex: number, imageUrl: string | null } | null>(null);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
@@ -60,8 +60,23 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             imageUrl = store.images[randIdx];
         }
 
-        setActivePopup({ storeId: store.id, videoIds, imageUrl });
+        setActivePopup({ storeId: store.id, videoIds, currentVideoIndex: 0, imageUrl });
     }, [activePopup?.storeId]);
+
+    // 動画の自動ローテーション（YouTube APIを使わずに現在再生中の動画を把握するため）
+    useEffect(() => {
+        if (!activePopup || !activePopup.videoIds || activePopup.videoIds.length <= 1) return;
+        
+        const interval = setInterval(() => {
+            setActivePopup(prev => {
+                if (!prev) return prev;
+                const nextIdx = (prev.currentVideoIndex + 1) % prev.videoIds.length;
+                return { ...prev, currentVideoIndex: nextIdx };
+            });
+        }, 12000); // 12秒ごとに次の動画へ切り替え
+
+        return () => clearInterval(interval);
+    }, [activePopup?.storeId, activePopup?.videoIds?.length]);
 
     const zoomToAll = useCallback(() => {
         if (!map || stores.length === 0) return;
@@ -533,7 +548,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             {activePopup.videoIds && activePopup.videoIds.length > 0 ? (
                                                 <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
                                                     <a 
-                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoIds[0]}`}
+                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoIds[activePopup.currentVideoIndex]}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="absolute inset-0 z-10"
@@ -541,7 +556,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                         title="YouTubeで見る"
                                                     />
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[0]}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoIds.join(',')}&vq=hd720`}
+                                                        key={activePopup.videoIds[activePopup.currentVideoIndex]} // keyを変えることで再レンダリングし強制再生
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoIds[activePopup.currentVideoIndex]}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&vq=hd720`}
                                                         className="w-full h-full pointer-events-none"
                                                         allow="autoplay"
                                                     />
