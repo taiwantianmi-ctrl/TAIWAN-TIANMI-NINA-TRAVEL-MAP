@@ -533,7 +533,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             {activePopup.videoId ? (
                                                 <div className="aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner pointer-events-none">
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoId}`}
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${activePopup.videoId}&vq=hd720`}
                                                         className="w-full h-full"
                                                         allow="autoplay"
                                                     />

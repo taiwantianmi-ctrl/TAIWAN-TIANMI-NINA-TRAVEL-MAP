@@ -226,7 +226,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                         return (
                                             <div key={i} className="aspect-video rounded-2xl overflow-hidden bg-black border-4 border-white shadow-xl">
                                                 <iframe
-                                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                                                    src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1&vq=hd720`}
                                                     className="w-full h-full"
                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                                     allowFullScreen
