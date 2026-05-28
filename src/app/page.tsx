@@ -346,6 +346,46 @@ export default function Home() {
             <GenreFilterUI />
           </div>
         )}
+
+        {/* Mobile Header Buttons */}
+        {isMobile && (
+          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 overflow-x-auto scrollbar-none pb-1 pointer-events-auto">
+            <button
+              onClick={() => {
+                setShowGenreFilter(!showGenreFilter);
+                setBottomSheetState("collapsed");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showGenreFilter ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+            >
+              <LayoutGrid size={12} />
+              <span>ジャンル</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("favorites");
+                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
+                setShowGenreFilter(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+            >
+              <Heart size={12} fill={bottomSheetState !== "collapsed" && activeTab === "favorites" ? "currentColor" : "none"} />
+              <span>お気に入り ({userStats.favorites.length})</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setActiveTab("visited");
+                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
+                setShowGenreFilter(false);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+            >
+              <CheckCircle size={12} />
+              <span>行ってみたい ({userStats.visited.length})</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Map Container */}
@@ -528,50 +568,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Floating Thumb Action Dock for Smartphone */}
-      {isMobile && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[220px] transition-all duration-300 ${isPopupActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100 pointer-events-auto'}`}>
-          <div className="bg-white/90 backdrop-blur-xl border border-white/50 px-4 py-2.5 rounded-[2rem] shadow-[0_15px_40px_rgba(255,193,204,0.3)] flex items-center justify-between pointer-events-auto">
-            {/* 1. Genre Filter Toggle */}
-            <button 
-              onClick={() => {
-                setShowGenreFilter(!showGenreFilter);
-                setBottomSheetState("collapsed");
-              }}
-              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${showGenreFilter ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              title="ジャンル"
-            >
-              <LayoutGrid size={20} />
-            </button>
 
-            {/* 2. Favorites List Toggle */}
-            <button 
-              onClick={() => {
-                setActiveTab("favorites");
-                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
-                setShowGenreFilter(false);
-              }}
-              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              title="お気に入り"
-            >
-              <Heart size={20} fill={bottomSheetState !== "collapsed" && activeTab === "favorites" ? "currentColor" : "none"} />
-            </button>
-
-            {/* 3. Visited List Toggle */}
-            <button 
-              onClick={() => {
-                setActiveTab("visited");
-                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
-                setShowGenreFilter(false);
-              }}
-              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-100 text-orange-500' : 'text-gray-500 hover:text-orange-50'}`}
-              title="行ってみたい"
-            >
-              <CheckCircle size={20} />
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Modals */}
       <StoreDetailModal
