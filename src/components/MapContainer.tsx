@@ -17,13 +17,12 @@ interface MapContainerProps {
     isAdminMode?: boolean;
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
     onToggleStat?: (type: "visited" | "favorites", id: string) => void;
-    lang?: "ja" | "zh";
     onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
     focusedStore?: Store | null;
     onPopupActiveChange?: (active: boolean) => void;
 }
 
-export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, lang = "ja", onUserLocationChange, focusedStore, onPopupActiveChange }: MapContainerProps) {
+export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, onUserLocationChange, focusedStore, onPopupActiveChange }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);

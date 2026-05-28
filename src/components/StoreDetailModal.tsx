@@ -11,11 +11,10 @@ interface StoreDetailModalProps {
     onClose: () => void;
     userStats: UserStats;
     onToggleStat: (type: "visited" | "favorites", id: string) => void;
-    lang?: "ja" | "zh";
     userLocation?: { lat: number; lng: number } | null;
 }
 
-export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang = "ja", userLocation }: StoreDetailModalProps) {
+export function StoreDetailModal({ store, onClose, userStats, onToggleStat, userLocation }: StoreDetailModalProps) {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -43,17 +42,17 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang
     const isVisited = userStats.visited.includes(store.id);
 
     const t = {
-        favoriteAdd: lang === "ja" ? "ワタシの御用達店" : "我的愛店列表",
-        favoriteRemove: lang === "ja" ? "御用達店から外す" : "移出愛店列表",
-        visitedAdd: lang === "ja" ? "行ってみたい！" : "我想去！",
-        visitedRemove: lang === "ja" ? "行きたいリスト追加済！" : "已加想去清單！",
-        buy: lang === "ja" ? "商品を購入する" : "購買商品",
-        website: lang === "ja" ? "公式サイト" : "官方網站",
-        instagram: lang === "ja" ? "Instagram" : "Instagram",
-        route: lang === "ja" ? "Google Maps でルート検索" : "使用 Google Maps 導航",
-        noImages: lang === "ja" ? "画像がありません" : "暫無照片",
-        description: lang === "ja" ? "お店の紹介" : "店家介紹",
-        youtube: lang === "ja" ? "YouTube スニペット" : "YouTube 影片介紹"
+        favoriteAdd: "ワタシの御用達店",
+        favoriteRemove: "御用達店から外す",
+        visitedAdd: "行ってみたい！",
+        visitedRemove: "行きたいリスト追加済！",
+        buy: "商品を購入する",
+        website: "公式サイト",
+        instagram: "Instagram",
+        route: "Google Maps でルート検索",
+        noImages: "画像がありません",
+        description: "お店の紹介",
+        youtube: "YouTube スニペット"
     };
 
     return (
@@ -87,7 +86,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang
                                 >
                                     <img
                                         src={getOptimizedImageUrl(store.images[activeImageIndex], 1000)}
-                                        alt={`${lang === "ja" ? store.nameJP : store.nameCH} ${activeImageIndex + 1}`}
+                                        alt={`${store.nameJP} ${activeImageIndex + 1}`}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                         referrerPolicy="no-referrer"
@@ -162,12 +161,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang
                     <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8 scrollbar-none">
                         <div className="space-y-2">
                             <h2 className="text-2xl md:text-3xl font-black text-sweet-brown tracking-tighter leading-none">
-                                {lang === "ja" ? store.nameJP : store.nameCH}
+                                {store.nameJP}
                             </h2>
                             <div className="flex items-center gap-2 flex-wrap">
-                                <p className="text-sm font-bold text-sweet-brown/40">
-                                    {lang === "ja" ? store.nameCH : store.nameJP}
-                                </p>
                                 {userLocation && (
                                     <span className="text-[10px] font-black text-pink-500 bg-pink-50 px-2 py-0.5 rounded-lg border border-pink-100/50 flex items-center gap-1">
                                         📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
@@ -192,11 +188,11 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang
                             </button>
                         </div>
 
-                        {((lang === "ja" && store.descriptionJP) || (lang === "zh" && store.descriptionCH)) && (
+                        {store.descriptionJP && (
                             <div className="space-y-3">
                                 <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{t.description}</h3>
                                 <p className="text-sweet-brown/80 leading-relaxed text-sm font-medium whitespace-pre-wrap">
-                                    {lang === "ja" ? store.descriptionJP : store.descriptionCH}
+                                    {store.descriptionJP}
                                 </p>
                             </div>
                         )}

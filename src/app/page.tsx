@@ -23,7 +23,6 @@ export default function Home() {
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [showGenreFilter, setShowGenreFilter] = useState(false);
   const [appLogoUrl, setAppLogoUrl] = useState<string | null>(null);
-  const [lang, setLang] = useState<"ja" | "zh">("ja");
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [focusedStore, setFocusedStore] = useState<Store | null>(null);
   const [isMobile, setIsMobile] = useState(false);
@@ -31,14 +30,6 @@ export default function Home() {
   const [sortByDistance, setSortByDistance] = useState(false);
   const [activeTab, setActiveTab] = useState<"favorites" | "visited">("favorites");
   const [isPopupActive, setIsPopupActive] = useState(false);
-
-  // Load language settings
-  useEffect(() => {
-    const savedLang = localStorage.getItem("taiwan_sweet_lang");
-    if (savedLang === "ja" || savedLang === "zh") {
-      setLang(savedLang);
-    }
-  }, []);
 
   // Monitor resize for mobile detection
   useEffect(() => {
@@ -49,12 +40,6 @@ export default function Home() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Save language settings to LocalStorage
-  const handleLanguageChange = (newLang: "ja" | "zh") => {
-    setLang(newLang);
-    localStorage.setItem("taiwan_sweet_lang", newLang);
-  };
 
   // Load user stats from LocalStorage
   useEffect(() => {
@@ -320,7 +305,7 @@ export default function Home() {
             </div>
             <div className="min-w-0">
               <h1 className={`font-black text-sweet-brown tracking-tighter leading-tight truncate ${isMobile ? 'text-sm' : 'text-lg md:text-xl'}`}>
-                {lang === "ja" ? "ニーナの「台湾甜蜜」マップ" : "妮娜的「台灣甜蜜」地圖"}
+                ニーナの「台湾甜蜜」マップ
               </h1>
               <p className={`font-bold text-pink-400 uppercase tracking-widest truncate ${isMobile ? 'text-[8px]' : 'text-[10px] md:text-[10px]'}`}>
                 Nina's Taiwan sweets journey
@@ -328,48 +313,23 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Language switch on desktop or mini-header statistics */}
-          {!isMobile ? (
+          {/* Right: Statistics (Desktop Only) */}
+          {!isMobile && (
             <div className="flex flex-row items-center gap-4 shrink-0">
-              {/* Language Switch */}
-              <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-2xl border border-gray-200/50">
-                <button
-                  onClick={() => handleLanguageChange("ja")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${lang === "ja" ? "bg-white text-pink-500 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
-                >
-                  日本語
-                </button>
-                <button
-                  onClick={() => handleLanguageChange("zh")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${lang === "zh" ? "bg-white text-pink-500 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
-                >
-                  繁體中文
-                </button>
-              </div>
-
               {/* Statistics */}
               <div className="flex items-center gap-2">
                 <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
                   <Heart size={14} fill="currentColor" />
-                  <span>{lang === "ja" ? "御用達店" : "御用店家"}</span>
+                  <span>御用達店</span>
                   <span className="ml-0.5 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
                 <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100">
                   <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
-                  <span>{lang === "ja" ? "行ってみたい！" : "我想去！"}</span>
+                  <span>行ってみたい！</span>
                   <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
             </div>
-          ) : (
-            /* Language Switch for Mobile (Header right) */
-            <button
-              onClick={() => handleLanguageChange(lang === "ja" ? "zh" : "ja")}
-              className="px-2.5 py-1.5 bg-pink-50 border border-pink-100 text-pink-500 rounded-xl text-xs font-black flex items-center gap-1 shrink-0 cursor-pointer"
-            >
-              <Globe size={12} />
-              <span>{lang === "ja" ? "繁體" : "日本語"}</span>
-            </button>
           )}
         </div>
 
@@ -418,7 +378,6 @@ export default function Home() {
             }
           }}
           onToggleStat={toggleStat}
-          lang={lang}
           onUserLocationChange={setUserLocation}
           focusedStore={focusedStore}
           onPopupActiveChange={(active) => {
@@ -459,13 +418,13 @@ export default function Home() {
                   onClick={() => setActiveTab("favorites")}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "favorites" ? 'bg-pink-400 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
-                  {lang === "ja" ? "お気に入り" : "我的愛店"} ({userStats.favorites.length})
+                  お気に入り ({userStats.favorites.length})
                 </button>
                 <button
                   onClick={() => setActiveTab("visited")}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "visited" ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
-                  {lang === "ja" ? "行ってみたい" : "我想去"} ({userStats.visited.length})
+                  行ってみたい ({userStats.visited.length})
                 </button>
               </div>
 
@@ -476,7 +435,7 @@ export default function Home() {
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border transition-colors cursor-pointer ${sortByDistance ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-white border-gray-100 text-gray-500'}`}
                 >
                   <ArrowUpDown size={12} />
-                  {lang === "ja" ? "近い順" : "距離近"}
+                  近い順
                 </button>
               )}
             </div>
@@ -492,7 +451,7 @@ export default function Home() {
                     <div className="h-40 flex flex-col items-center justify-center text-gray-300 gap-2">
                       <div className="text-3xl">🍬</div>
                       <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
-                        {lang === "ja" ? "店舗がありません" : "清單暫無店家"}
+                        店舗がありません
                       </p>
                     </div>
                   );
@@ -532,7 +491,7 @@ export default function Home() {
                             style={{ backgroundColor: info.color + '20', color: info.color }}
                             className="px-1.5 py-0.5 rounded text-[8px] font-black"
                           >
-                            {info.icon} {genres.find(g => g.id === store.genres[0])?.[lang === "ja" ? "nameJP" : "nameCH"]}
+                            {info.icon} {genres.find(g => g.id === store.genres[0])?.nameJP}
                           </span>
                           {userLocation && (
                             <span className="text-[8px] font-black text-gray-400">
@@ -541,11 +500,8 @@ export default function Home() {
                           )}
                         </div>
                         <h4 className="text-xs font-black text-sweet-brown truncate leading-tight mt-1">
-                          {lang === "ja" ? store.nameJP : store.nameCH}
+                          {store.nameJP}
                         </h4>
-                        <p className="text-[9px] text-gray-400 font-bold truncate">
-                          {lang === "ja" ? store.nameCH : store.nameJP}
-                        </p>
                       </div>
 
                       {/* Action Triggers */}
@@ -574,7 +530,7 @@ export default function Home() {
 
       {/* Floating Thumb Action Dock for Smartphone */}
       {isMobile && (
-        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[280px] transition-all duration-300 ${isPopupActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100 pointer-events-auto'}`}>
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[220px] transition-all duration-300 ${isPopupActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100 pointer-events-auto'}`}>
           <div className="bg-white/90 backdrop-blur-xl border border-white/50 px-4 py-2.5 rounded-[2rem] shadow-[0_15px_40px_rgba(255,193,204,0.3)] flex items-center justify-between pointer-events-auto">
             {/* 1. Genre Filter Toggle */}
             <button 
@@ -583,7 +539,7 @@ export default function Home() {
                 setBottomSheetState("collapsed");
               }}
               className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${showGenreFilter ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              title={lang === "ja" ? "ジャンル" : "分類"}
+              title="ジャンル"
             >
               <LayoutGrid size={20} />
             </button>
@@ -596,7 +552,7 @@ export default function Home() {
                 setShowGenreFilter(false);
               }}
               className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
-              title={lang === "ja" ? "お気に入り" : "我的最愛"}
+              title="お気に入り"
             >
               <Heart size={20} fill={bottomSheetState !== "collapsed" && activeTab === "favorites" ? "currentColor" : "none"} />
             </button>
@@ -609,19 +565,9 @@ export default function Home() {
                 setShowGenreFilter(false);
               }}
               className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-100 text-orange-500' : 'text-gray-500 hover:text-orange-50'}`}
-              title={lang === "ja" ? "行ってみたい" : "我想去"}
+              title="行ってみたい"
             >
               <CheckCircle size={20} />
-            </button>
-
-            {/* 4. Language Selector */}
-            <button 
-              onClick={() => handleLanguageChange(lang === "ja" ? "zh" : "ja")}
-              className="p-2.5 text-gray-500 hover:text-pink-500 transition-colors flex items-center gap-1 cursor-pointer font-black text-xs border border-gray-100 rounded-2xl"
-              title={lang === "ja" ? "言語切替" : "切換語言"}
-            >
-              <Globe size={14} />
-              <span>{lang === "ja" ? "繁" : "JP"}</span>
             </button>
           </div>
         </div>
@@ -633,7 +579,6 @@ export default function Home() {
         onClose={() => setSelectedStore(null)}
         userStats={userStats}
         onToggleStat={toggleStat}
-        lang={lang}
         userLocation={userLocation}
       />
 
