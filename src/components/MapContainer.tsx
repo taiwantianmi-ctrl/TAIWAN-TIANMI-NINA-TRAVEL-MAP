@@ -591,7 +591,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                 
                                 {/* Interactive Popup */}
                                 <AnimatePresence>
-                                    {!isMobile && activePopup?.storeId === store.id && (
+                                    {activePopup?.storeId === store.id && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -629,7 +629,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setActivePopup(null);
+                                                        updateActivePopup(null);
                                                         onStoreSelect(store);
                                                     }}
                                                     className="w-[134px] py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[9px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
