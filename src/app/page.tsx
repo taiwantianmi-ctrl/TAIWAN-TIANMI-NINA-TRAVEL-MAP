@@ -30,6 +30,7 @@ export default function Home() {
   const [bottomSheetState, setBottomSheetState] = useState<"collapsed" | "half" | "full">("collapsed");
   const [sortByDistance, setSortByDistance] = useState(false);
   const [activeTab, setActiveTab] = useState<"favorites" | "visited">("favorites");
+  const [isPopupActive, setIsPopupActive] = useState(false);
 
   // Load language settings
   useEffect(() => {
@@ -420,6 +421,13 @@ export default function Home() {
           lang={lang}
           onUserLocationChange={setUserLocation}
           focusedStore={focusedStore}
+          onPopupActiveChange={(active) => {
+            setIsPopupActive(active);
+            if (active) {
+              setBottomSheetState("collapsed");
+              setShowGenreFilter(false);
+            }
+          }}
         />
       </div>
 
@@ -566,7 +574,7 @@ export default function Home() {
 
       {/* Floating Thumb Action Dock for Smartphone */}
       {isMobile && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[280px]">
+        <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[280px] transition-all duration-300 ${isPopupActive ? 'opacity-0 scale-95 pointer-events-none' : 'opacity-100 scale-100 pointer-events-auto'}`}>
           <div className="bg-white/90 backdrop-blur-xl border border-white/50 px-4 py-2.5 rounded-[2rem] shadow-[0_15px_40px_rgba(255,193,204,0.3)] flex items-center justify-between pointer-events-auto">
             {/* 1. Genre Filter Toggle */}
             <button 
