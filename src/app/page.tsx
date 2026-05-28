@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useStores } from "@/hooks/useStores";
 import { MapContainer } from "@/components/MapContainer";
 import { StoreDetailModal } from "@/components/StoreDetailModal";
@@ -8,7 +8,8 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft } from "lucide-react";
+import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X } from "lucide-react";
+import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
 
 export default function Home() {
   const { stores, genres, loading } = useStores();
@@ -22,6 +23,37 @@ export default function Home() {
   const [formStep, setFormStep] = useState<1 | 2>(1);
   const [showGenreFilter, setShowGenreFilter] = useState(false);
   const [appLogoUrl, setAppLogoUrl] = useState<string | null>(null);
+  const [lang, setLang] = useState<"ja" | "zh">("ja");
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [focusedStore, setFocusedStore] = useState<Store | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+  const [bottomSheetState, setBottomSheetState] = useState<"collapsed" | "half" | "full">("collapsed");
+  const [sortByDistance, setSortByDistance] = useState(false);
+  const [activeTab, setActiveTab] = useState<"favorites" | "visited">("favorites");
+
+  // Load language settings
+  useEffect(() => {
+    const savedLang = localStorage.getItem("taiwan_sweet_lang");
+    if (savedLang === "ja" || savedLang === "zh") {
+      setLang(savedLang);
+    }
+  }, []);
+
+  // Monitor resize for mobile detection
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Save language settings to LocalStorage
+  const handleLanguageChange = (newLang: "ja" | "zh") => {
+    setLang(newLang);
+    localStorage.setItem("taiwan_sweet_lang", newLang);
+  };
 
   // Load user stats from LocalStorage
   useEffect(() => {
@@ -84,6 +116,18 @@ export default function Home() {
   if (showOnlyVisited) {
     filteredStores = filteredStores.filter(store => userStats.visited.includes(store.id));
   }
+
+  // Distance sorting if GPS location is active
+  const sortedStoresByDistance = useMemo(() => {
+    if (!userLocation) return filteredStores;
+    return [...filteredStores].sort((a, b) => {
+      const distA = calculateDistance(userLocation.lat, userLocation.lng, a.lat, a.lng);
+      const distB = calculateDistance(userLocation.lat, userLocation.lng, b.lat, b.lng);
+      return distA - distB;
+    });
+  }, [filteredStores, userLocation, sortByDistance]);
+
+  const finalStoresList = sortByDistance ? sortedStoresByDistance : filteredStores;
 
   // Common Genre Filter UI component to be reused
   const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
@@ -252,61 +296,101 @@ export default function Home() {
     );
   }
 
+  const getGenreInfo = (store: Store) => {
+    if (store.genres && store.genres.length > 0) {
+      const genre = genres.find(g => g.id === store.genres[0]);
+      if (genre) return { icon: genre.iconUrl, color: genre.color || "#ffffff" };
+    }
+    return { icon: "🍡", color: "#FFB6C1" }; // Fallback
+  };
+
   return (
     <main className="relative h-screen w-full overflow-hidden bg-white flex flex-col">
       {/* Top Floating Controls */}
-      <div className="relative z-40 bg-white p-2 md:p-4 border-b border-gray-100">
-        <div className="w-full flex items-stretch gap-4">
-          {/* Main Content Area: Title & Stats & Filter */}
-          <div className="flex-1 flex flex-col md:flex-row items-stretch gap-4">
-            {/* Left: Title & Stats */}
-            <div className="flex flex-col gap-2 pointer-events-auto cursor-pointer">
-              <motion.div
-                initial={{ x: -10, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                className="px-2 md:px-4 py-1 flex items-center gap-3 md:gap-4 hover:opacity-70 transition-opacity"
-                onClick={resetApp}
-              >
-                <div className="w-24 h-24 md:w-28 md:h-28 bg-white rounded-xl md:rounded-2xl shadow-sm border-2 border-white overflow-hidden shrink-0 flex items-center justify-center">
-                  <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
-                </div>
-                <div className="min-w-0">
-                  <h1 className="text-lg md:text-xl font-black text-sweet-brown tracking-tighter leading-tight truncate">ニーナの「台湾甜蜜」マップ</h1>
-                  <p className="text-[10px] md:text-[10px] font-bold text-pink-400 uppercase tracking-widest truncate">Nina's Taiwan sweets journey</p>
-                </div>
-              </motion.div>
+      <div className={`relative z-40 bg-white border-b border-gray-100 shadow-sm transition-all duration-300 ${isMobile ? 'p-3' : 'p-2 md:p-4'}`}>
+        <div className="w-full flex items-center justify-between gap-4">
+          {/* Left: Title & Logo */}
+          <div 
+            className="flex items-center gap-2 md:gap-4 pointer-events-auto cursor-pointer min-w-0"
+            onClick={resetApp}
+          >
+            <div className={`bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden shrink-0 flex items-center justify-center ${isMobile ? 'w-10 h-10' : 'w-24 h-24 md:w-28 md:h-28'}`}>
+              <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
+            </div>
+            <div className="min-w-0">
+              <h1 className={`font-black text-sweet-brown tracking-tighter leading-tight truncate ${isMobile ? 'text-sm' : 'text-lg md:text-xl'}`}>
+                {lang === "ja" ? "ニーナの「台湾甜蜜」マップ" : "妮娜的「台灣甜蜜」地圖"}
+              </h1>
+              <p className={`font-bold text-pink-400 uppercase tracking-widest truncate ${isMobile ? 'text-[8px]' : 'text-[10px] md:text-[10px]'}`}>
+                Nina's Taiwan sweets journey
+              </p>
+            </div>
+          </div>
 
-              <div className="flex flex-row items-center gap-2 px-2 md:px-4 mb-1 overflow-x-auto scrollbar-none">
-                <div className="whitespace-nowrap bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100 flex-shrink-0">
+          {/* Right: Language switch on desktop or mini-header statistics */}
+          {!isMobile ? (
+            <div className="flex flex-row items-center gap-4 shrink-0">
+              {/* Language Switch */}
+              <div className="flex items-center gap-1.5 bg-gray-100 p-1 rounded-2xl border border-gray-200/50">
+                <button
+                  onClick={() => handleLanguageChange("ja")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${lang === "ja" ? "bg-white text-pink-500 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  日本語
+                </button>
+                <button
+                  onClick={() => handleLanguageChange("zh")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${lang === "zh" ? "bg-white text-pink-500 shadow-sm" : "text-gray-400 hover:text-gray-600"}`}
+                >
+                  繁體中文
+                </button>
+              </div>
+
+              {/* Statistics */}
+              <div className="flex items-center gap-2">
+                <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
                   <Heart size={14} fill="currentColor" />
-                  <span>ワタシの御用達店</span>
+                  <span>{lang === "ja" ? "御用達店" : "御用店家"}</span>
                   <span className="ml-0.5 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
-                <div className="whitespace-nowrap bg-white/90 backdrop-blur-md px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100 flex-shrink-0">
+                <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100">
                   <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
-                  <span>行ってみたい！</span>
+                  <span>{lang === "ja" ? "行ってみたい！" : "我想去！"}</span>
                   <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
                 </div>
               </div>
             </div>
+          ) : (
+            /* Language Switch for Mobile (Header right) */
+            <button
+              onClick={() => handleLanguageChange(lang === "ja" ? "zh" : "ja")}
+              className="px-2.5 py-1.5 bg-pink-50 border border-pink-100 text-pink-500 rounded-xl text-xs font-black flex items-center gap-1 shrink-0 cursor-pointer"
+            >
+              <Globe size={12} />
+              <span>{lang === "ja" ? "繁體" : "日本語"}</span>
+            </button>
+          )}
+        </div>
 
-            {/* Middle: Genre Filter - PC - Extends to Logo */}
-            <div className="hidden md:block flex-1 pointer-events-auto">
-              <GenreFilterUI isPC={true} />
-            </div>
+        {/* Middle: Genre Filter - PC - Extends to Logo */}
+        {!isMobile && (
+          <div className="mt-4 pointer-events-auto">
+            <GenreFilterUI isPC={true} />
           </div>
-        </div>
+        )}
 
-        {/* Genre Filter Bar - Mobile Position */}
-        <div className="md:hidden w-full px-2 mt-2">
-          <GenreFilterUI />
-        </div>
+        {/* Genre Filter Bar - Mobile Position (Drawer Pop) */}
+        {isMobile && showGenreFilter && (
+          <div className="w-full px-2 mt-2">
+            <GenreFilterUI />
+          </div>
+        )}
       </div>
 
       {/* Map Container */}
       <div className="flex-1 p-2 bg-gray-50 overflow-hidden relative">
         <MapContainer
-          stores={filteredStores}
+          stores={finalStoresList}
           genres={genres}
           onStoreSelect={(store) => {
             if (showAdmin) {
@@ -332,8 +416,208 @@ export default function Home() {
               setFormStep(1);
             }
           }}
+          onToggleStat={toggleStat}
+          lang={lang}
+          onUserLocationChange={setUserLocation}
+          focusedStore={focusedStore}
         />
       </div>
+
+      {/* Mobile Swipeable Bottom Sheet */}
+      <AnimatePresence>
+        {isMobile && bottomSheetState !== "collapsed" && (
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ 
+              y: bottomSheetState === "half" ? "50%" : "15%" 
+            }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="fixed inset-x-0 bottom-0 z-[48] bg-white rounded-t-[2.5rem] shadow-[0_-15px_40px_rgba(0,0,0,0.12)] border-t border-gray-100 flex flex-col pointer-events-auto overflow-hidden"
+            style={{ height: "85vh" }}
+          >
+            {/* Drag Handle Indicator */}
+            <div 
+              className="w-full py-4 flex justify-center cursor-ns-resize shrink-0"
+              onClick={() => setBottomSheetState(bottomSheetState === "half" ? "full" : "half")}
+            >
+              <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
+            </div>
+
+            {/* List Header */}
+            <div className="px-5 pb-3.5 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab("favorites")}
+                  className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "favorites" ? 'bg-pink-400 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
+                >
+                  {lang === "ja" ? "お気に入り" : "我的愛店"} ({userStats.favorites.length})
+                </button>
+                <button
+                  onClick={() => setActiveTab("visited")}
+                  className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "visited" ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
+                >
+                  {lang === "ja" ? "行ってみたい" : "我想去"} ({userStats.visited.length})
+                </button>
+              </div>
+
+              {/* Sort Switch */}
+              {userLocation && (
+                <button
+                  onClick={() => setSortByDistance(!sortByDistance)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border transition-colors cursor-pointer ${sortByDistance ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-white border-gray-100 text-gray-500'}`}
+                >
+                  <ArrowUpDown size={12} />
+                  {lang === "ja" ? "近い順" : "距離近"}
+                </button>
+              )}
+            </div>
+
+            {/* Sheet Scrollable List */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 pb-28 scrollbar-none">
+              {(() => {
+                const listIds = activeTab === "favorites" ? userStats.favorites : userStats.visited;
+                const listStores = finalStoresList.filter(s => listIds.includes(s.id));
+
+                if (listStores.length === 0) {
+                  return (
+                    <div className="h-40 flex flex-col items-center justify-center text-gray-300 gap-2">
+                      <div className="text-3xl">🍬</div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                        {lang === "ja" ? "店舗がありません" : "清單暫無店家"}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return listStores.map(store => {
+                  const info = getGenreInfo(store);
+                  const isFav = userStats.favorites.includes(store.id);
+                  const isVis = userStats.visited.includes(store.id);
+
+                  return (
+                    <div
+                      key={store.id}
+                      onClick={() => {
+                        setFocusedStore(store);
+                        setBottomSheetState("collapsed");
+                      }}
+                      className="p-3 bg-gray-50/60 hover:bg-pink-50 border border-gray-100/50 rounded-2xl flex items-center gap-3 cursor-pointer transition-colors shadow-sm"
+                    >
+                      {/* Image */}
+                      <div className="w-14 h-14 bg-white rounded-xl overflow-hidden shrink-0 shadow-inner">
+                        {store.images && store.images.length > 0 ? (
+                          <img
+                            src={getOptimizedImageUrl(store.images[0], 150)}
+                            alt={store.nameJP}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-gray-300">🍡</div>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span 
+                            style={{ backgroundColor: info.color + '20', color: info.color }}
+                            className="px-1.5 py-0.5 rounded text-[8px] font-black"
+                          >
+                            {info.icon} {genres.find(g => g.id === store.genres[0])?.[lang === "ja" ? "nameJP" : "nameCH"]}
+                          </span>
+                          {userLocation && (
+                            <span className="text-[8px] font-black text-gray-400">
+                              📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-xs font-black text-sweet-brown truncate leading-tight mt-1">
+                          {lang === "ja" ? store.nameJP : store.nameCH}
+                        </h4>
+                        <p className="text-[9px] text-gray-400 font-bold truncate">
+                          {lang === "ja" ? store.nameCH : store.nameJP}
+                        </p>
+                      </div>
+
+                      {/* Action Triggers */}
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => toggleStat("favorites", store.id)}
+                          className={`p-2 rounded-xl border transition-colors cursor-pointer ${isFav ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-white border-gray-100 text-gray-400'}`}
+                        >
+                          <Heart size={12} fill={isFav ? "currentColor" : "none"} />
+                        </button>
+                        <button
+                          onClick={() => toggleStat("visited", store.id)}
+                          className={`p-2 rounded-xl border transition-colors cursor-pointer ${isVis ? 'bg-orange-50 border-orange-100 text-orange-500' : 'bg-white border-gray-100 text-gray-400'}`}
+                        >
+                          <span className="text-[8px] font-black">✓</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Thumb Action Dock for Smartphone */}
+      {isMobile && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[49] pointer-events-none w-full max-w-[280px]">
+          <div className="bg-white/90 backdrop-blur-xl border border-white/50 px-4 py-2.5 rounded-[2rem] shadow-[0_15px_40px_rgba(255,193,204,0.3)] flex items-center justify-between pointer-events-auto">
+            {/* 1. Genre Filter Toggle */}
+            <button 
+              onClick={() => {
+                setShowGenreFilter(!showGenreFilter);
+                setBottomSheetState("collapsed");
+              }}
+              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${showGenreFilter ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
+              title={lang === "ja" ? "ジャンル" : "分類"}
+            >
+              <LayoutGrid size={20} />
+            </button>
+
+            {/* 2. Favorites List Toggle */}
+            <button 
+              onClick={() => {
+                setActiveTab("favorites");
+                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
+                setShowGenreFilter(false);
+              }}
+              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-100 text-pink-500' : 'text-gray-500 hover:text-pink-500'}`}
+              title={lang === "ja" ? "お気に入り" : "我的最愛"}
+            >
+              <Heart size={20} fill={bottomSheetState !== "collapsed" && activeTab === "favorites" ? "currentColor" : "none"} />
+            </button>
+
+            {/* 3. Visited List Toggle */}
+            <button 
+              onClick={() => {
+                setActiveTab("visited");
+                setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
+                setShowGenreFilter(false);
+              }}
+              className={`p-2.5 rounded-2xl transition-colors cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-100 text-orange-500' : 'text-gray-500 hover:text-orange-50'}`}
+              title={lang === "ja" ? "行ってみたい" : "我想去"}
+            >
+              <CheckCircle size={20} />
+            </button>
+
+            {/* 4. Language Selector */}
+            <button 
+              onClick={() => handleLanguageChange(lang === "ja" ? "zh" : "ja")}
+              className="p-2.5 text-gray-500 hover:text-pink-500 transition-colors flex items-center gap-1 cursor-pointer font-black text-xs border border-gray-100 rounded-2xl"
+              title={lang === "ja" ? "言語切替" : "切換語言"}
+            >
+              <Globe size={14} />
+              <span>{lang === "ja" ? "繁" : "JP"}</span>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <StoreDetailModal
@@ -341,6 +625,8 @@ export default function Home() {
         onClose={() => setSelectedStore(null)}
         userStats={userStats}
         onToggleStat={toggleStat}
+        lang={lang}
+        userLocation={userLocation}
       />
 
       {

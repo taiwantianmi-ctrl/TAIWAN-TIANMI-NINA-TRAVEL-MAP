@@ -3,11 +3,11 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Heart, Eye } from "lucide-react";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
-import { mapStyle } from "@/lib/mapStyles";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
 
 interface MapContainerProps {
     stores: Store[];
@@ -16,9 +16,13 @@ interface MapContainerProps {
     userStats: { visited: string[]; favorites: string[] };
     isAdminMode?: boolean;
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
+    onToggleStat?: (type: "visited" | "favorites", id: string) => void;
+    lang?: "ja" | "zh";
+    onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
+    focusedStore?: Store | null;
 }
 
-export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect }: MapContainerProps) {
+export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, lang = "ja", onUserLocationChange, focusedStore }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +39,17 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
@@ -62,6 +77,20 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
         setActivePopup({ storeId: store.id, videoId, imageUrl });
     }, [activePopup?.storeId]);
+
+    useEffect(() => {
+        if (focusedStore && map) {
+            map.panTo({ lat: focusedStore.lat, lng: focusedStore.lng });
+            if (map.getZoom()! < 15) {
+                map.setZoom(15);
+            }
+            if (isMobile) {
+                setSelectedMobileStore(focusedStore);
+            } else {
+                handleMarkerHover(focusedStore);
+            }
+        }
+    }, [focusedStore, map, isMobile, handleMarkerHover]);
 
     const zoomToAll = useCallback(() => {
         if (!map || stores.length === 0) return;
@@ -303,11 +332,30 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
     const filteredStoreResults = useMemo(() => {
         if (!userSearchQuery) return [];
-        return stores.filter(s =>
-            s.nameJP.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-            s.nameCH.toLowerCase().includes(userSearchQuery.toLowerCase())
-        ).slice(0, 5);
-    }, [userSearchQuery, stores]);
+        const query = userSearchQuery.toLowerCase();
+        return stores.filter(s => {
+            const nameJP = s.nameJP?.toLowerCase() || "";
+            const nameCH = s.nameCH?.toLowerCase() || "";
+            const addressJP = s.addressJP?.toLowerCase() || "";
+            const addressCH = s.addressCH?.toLowerCase() || "";
+            const descJP = s.descriptionJP?.toLowerCase() || "";
+            const descCH = s.descriptionCH?.toLowerCase() || "";
+            
+            // Search genres
+            const genreNames = s.genres.map(gId => {
+                const g = genres.find(genre => genre.id === gId);
+                return g ? `${g.nameJP} ${g.nameCH}`.toLowerCase() : "";
+            }).join(" ");
+
+            return nameJP.includes(query) || 
+                   nameCH.includes(query) || 
+                   addressJP.includes(query) || 
+                   addressCH.includes(query) ||
+                   descJP.includes(query) ||
+                   descCH.includes(query) ||
+                   genreNames.includes(query);
+        }).slice(0, 5);
+    }, [userSearchQuery, stores, genres]);
 
     const toggleTracking = () => {
         if (!navigator.geolocation) {
@@ -321,6 +369,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 watchIdRef.current = null;
             }
             setIsTracking(false);
+            setUserLocation(null);
+            if (onUserLocationChange) onUserLocationChange(null);
             toast.success("現在地の追跡を停止しました");
         } else {
             setIsTracking(true);
@@ -333,6 +383,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                         lng: position.coords.longitude
                     };
                     setUserLocation(newPos);
+                    if (onUserLocationChange) onUserLocationChange(newPos);
                     if (map && isTracking) {
                         map.panTo(newPos);
                     }
@@ -340,6 +391,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 (error) => {
                     console.error("Geolocation error:", error);
                     setIsTracking(false);
+                    setUserLocation(null);
+                    if (onUserLocationChange) onUserLocationChange(null);
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
@@ -453,7 +506,6 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 mapId={"bf51a910020faedc"}
                 disableDefaultUI={true}
                 gestureHandling={"greedy"}
-                styles={mapStyle}
                 className="w-full h-full"
                 onClick={(e) => {
                     setShowSearchResults(false);
@@ -477,13 +529,22 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             zIndex={100}
                         >
                             <div
-                                onMouseEnter={() => handleMarkerHover(store)}
-                                onMouseLeave={() => setActivePopup(null)}
+                                onMouseEnter={() => !isMobile && handleMarkerHover(store)}
+                                onMouseLeave={() => !isMobile && setActivePopup(null)}
                                 onClick={(e) => {
-                                    if (activePopup?.storeId === store.id) {
-                                        onStoreSelect(store);
+                                    e.stopPropagation();
+                                    if (isMobile) {
+                                        map?.panTo({ lat: store.lat, lng: store.lng });
+                                        if ((map?.getZoom() || 0) < 14) {
+                                            map?.setZoom(14.5);
+                                        }
+                                        setSelectedMobileStore(store);
                                     } else {
-                                        handleMarkerHover(store);
+                                        if (activePopup?.storeId === store.id) {
+                                            onStoreSelect(store);
+                                        } else {
+                                            handleMarkerHover(store);
+                                        }
                                     }
                                 }}
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
@@ -518,7 +579,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                 
                                 {/* Interactive Popup */}
                                 <AnimatePresence>
-                                    {activePopup?.storeId === store.id && (
+                                    {!isMobile && activePopup?.storeId === store.id && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10, scale: 0.9 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -579,10 +640,114 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                         </div>
                     </AdvancedMarker>
                 )}
+
+                {/* GPS Current Location Marker */}
+                {userLocation && (
+                    <AdvancedMarker position={userLocation} zIndex={1000}>
+                        <div className="relative flex items-center justify-center">
+                            <span className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-blue-400 opacity-75"></span>
+                            <div className="relative rounded-full h-5 w-5 bg-blue-500 border-3 border-white shadow-xl flex items-center justify-center">
+                                <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>
+                            </div>
+                        </div>
+                    </AdvancedMarker>
+                )}
             </Map>
 
+            {/* Mobile Bottom Store Card */}
+            <AnimatePresence>
+                {isMobile && selectedMobileStore && (
+                    <motion.div
+                        initial={{ y: 150, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        exit={{ y: 150, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        className="absolute bottom-4 left-4 right-4 z-[45] bg-white/95 backdrop-blur-xl p-3.5 rounded-3xl shadow-[0_15px_40px_rgba(0,0,0,0.12)] border-2 border-white/80 flex items-center gap-3.5 pointer-events-auto"
+                    >
+                        {/* Store Thumbnail */}
+                        <div className="w-20 h-20 bg-gray-50 rounded-2xl overflow-hidden shrink-0 shadow-inner relative">
+                            {selectedMobileStore.images && selectedMobileStore.images.length > 0 ? (
+                                <img
+                                    src={getOptimizedImageUrl(selectedMobileStore.images[0], 200)}
+                                    alt={selectedMobileStore.nameJP}
+                                    className="w-full h-full object-cover animate-fade-in"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300">🍡</div>
+                            )}
+                        </div>
+
+                        {/* Store Details */}
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                {selectedMobileStore.genres && selectedMobileStore.genres.length > 0 && (
+                                    <span 
+                                        style={{ backgroundColor: getGenreInfo(selectedMobileStore).color + '20', color: getGenreInfo(selectedMobileStore).color }}
+                                        className="px-2 py-0.5 rounded-lg text-[9px] font-black border border-white/50"
+                                    >
+                                        {getGenreInfo(selectedMobileStore).icon} {genres.find(g => g.id === selectedMobileStore.genres[0])?.[lang === "ja" ? "nameJP" : "nameCH"]}
+                                    </span>
+                                )}
+                                {userLocation && (
+                                    <span className="text-[9px] font-black text-gray-400">
+                                        📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, selectedMobileStore.lat, selectedMobileStore.lng))}
+                                    </span>
+                                )}
+                            </div>
+
+                            <h3 className="text-sm font-black text-sweet-brown truncate leading-tight mt-1">
+                                {lang === "ja" ? selectedMobileStore.nameJP : selectedMobileStore.nameCH}
+                            </h3>
+                            <p className="text-[10px] text-gray-400 font-bold truncate">
+                                {lang === "ja" ? selectedMobileStore.nameCH : selectedMobileStore.nameJP}
+                            </p>
+
+                            {/* Actions inside Card */}
+                            <div className="flex items-center gap-2 mt-2">
+                                <button
+                                    onClick={() => {
+                                        setSelectedMobileStore(null);
+                                        onStoreSelect(selectedMobileStore);
+                                    }}
+                                    className="px-3.5 py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[10px] font-black hover:opacity-90 transition-all shadow-md flex items-center gap-1 cursor-pointer"
+                                >
+                                    お店に入る ➔
+                                </button>
+                                
+                                {onToggleStat && (
+                                    <>
+                                        <button
+                                            onClick={() => onToggleStat("favorites", selectedMobileStore.id)}
+                                            className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${userStats.favorites.includes(selectedMobileStore.id) ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                                            title="お気に入り"
+                                        >
+                                            <Heart size={14} fill={userStats.favorites.includes(selectedMobileStore.id) ? "currentColor" : "none"} />
+                                        </button>
+                                        <button
+                                            onClick={() => onToggleStat("visited", selectedMobileStore.id)}
+                                            className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${userStats.visited.includes(selectedMobileStore.id) ? 'bg-orange-50 border-orange-100 text-orange-500' : 'bg-gray-50 border-gray-100 text-gray-400'}`}
+                                            title="行ってみたい"
+                                        >
+                                            <span className="text-[10px] font-black">✓</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Close button */}
+                        <button
+                            onClick={() => setSelectedMobileStore(null)}
+                            className="absolute top-2 right-2 w-7 h-7 bg-gray-50 hover:bg-gray-100 rounded-full flex items-center justify-center text-gray-400 hover:text-sweet-brown transition-colors cursor-pointer"
+                        >
+                            <X size={14} />
+                        </button>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Premium Map Controls */}
-            <div className="absolute bottom-6 right-6 flex flex-col items-center gap-4 z-[40]">
+            <div className={`absolute flex flex-col items-center gap-4 z-[40] transition-all duration-500 ${isMobile && selectedMobileStore ? 'bottom-32 right-4' : 'bottom-6 right-6'}`}>
                 {/* Tools Stack */}
                 <div className="flex flex-col items-center gap-3">
                     <AnimatePresence>

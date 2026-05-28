@@ -4,15 +4,18 @@ import { Store, UserStats } from "@/types";
 import { X, Heart, CheckCircle, MapPin, Youtube, ExternalLink, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Instagram, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
+import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
 
 interface StoreDetailModalProps {
     store: Store | null;
     onClose: () => void;
     userStats: UserStats;
     onToggleStat: (type: "visited" | "favorites", id: string) => void;
+    lang?: "ja" | "zh";
+    userLocation?: { lat: number; lng: number } | null;
 }
 
-export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: StoreDetailModalProps) {
+export function StoreDetailModal({ store, onClose, userStats, onToggleStat, lang = "ja", userLocation }: StoreDetailModalProps) {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -38,6 +41,20 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
 
     const isFavorite = userStats.favorites.includes(store.id);
     const isVisited = userStats.visited.includes(store.id);
+
+    const t = {
+        favoriteAdd: lang === "ja" ? "ワタシの御用達店" : "我的愛店列表",
+        favoriteRemove: lang === "ja" ? "御用達店から外す" : "移出愛店列表",
+        visitedAdd: lang === "ja" ? "行ってみたい！" : "我想去！",
+        visitedRemove: lang === "ja" ? "行きたいリスト追加済！" : "已加想去清單！",
+        buy: lang === "ja" ? "商品を購入する" : "購買商品",
+        website: lang === "ja" ? "公式サイト" : "官方網站",
+        instagram: lang === "ja" ? "Instagram" : "Instagram",
+        route: lang === "ja" ? "Google Maps でルート検索" : "使用 Google Maps 導航",
+        noImages: lang === "ja" ? "画像がありません" : "暫無照片",
+        description: lang === "ja" ? "お店の紹介" : "店家介紹",
+        youtube: lang === "ja" ? "YouTube スニペット" : "YouTube 影片介紹"
+    };
 
     return (
         <AnimatePresence>
@@ -69,20 +86,16 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                     className="absolute inset-0 bg-black flex items-center justify-center"
                                 >
                                     <img
-                                        src={store.images[activeImageIndex].includes('drive.google.com/uc') ? store.images[activeImageIndex].replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w1000') : store.images[activeImageIndex]}
-                                        alt={`${store.nameJP} ${activeImageIndex + 1}`}
+                                        src={getOptimizedImageUrl(store.images[activeImageIndex], 1000)}
+                                        alt={`${lang === "ja" ? store.nameJP : store.nameCH} ${activeImageIndex + 1}`}
                                         className="w-full h-full object-cover"
                                         loading="lazy"
                                         referrerPolicy="no-referrer"
                                         onError={(e) => {
                                             const target = e.target as HTMLImageElement;
-                                            // Prevent infinite loop if fallback also fails
                                             if (target.src.includes('unsplash.com')) return;
-
-                                            // Professional food/sweet shop placeholder
                                             target.src = "https://images.unsplash.com/photo-1559181567-c3190ca9959b?auto=format&fit=crop&q=80&w=800";
                                             target.classList.add("opacity-60", "grayscale-[0.5]");
-                                            console.warn("Image load failed, using fallback:", store.nameJP);
                                         }}
                                     />
                                 </motion.div>
@@ -95,7 +108,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                     <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center shadow-inner">
                                         <ImageIcon size={32} className="text-gray-200" />
                                     </div>
-                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">No Store Images</span>
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400">{t.noImages}</span>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -108,18 +121,18 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev > 0 ? prev - 1 : store.images.length - 1);
                                     }}
-                                    className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.3)] text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border-2 border-white ring-1 ring-black/5"
+                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border border-white cursor-pointer"
                                 >
-                                    <ChevronLeft size={32} strokeWidth={3} />
+                                    <ChevronLeft size={24} strokeWidth={3} />
                                 </button>
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev < store.images.length - 1 ? prev + 1 : 0);
                                     }}
-                                    className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.3)] text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border-2 border-white ring-1 ring-black/5"
+                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border border-white cursor-pointer"
                                 >
-                                    <ChevronRight size={32} strokeWidth={3} />
+                                    <ChevronRight size={24} strokeWidth={3} />
                                 </button>
                             </div>
                         )}
@@ -139,7 +152,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
 
                         <button
                             onClick={onClose}
-                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 hover:rotate-90 transition-all duration-300 z-10"
+                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 hover:rotate-90 transition-all duration-300 z-10 cursor-pointer"
                         >
                             <X size={24} strokeWidth={2.5} />
                         </button>
@@ -148,30 +161,43 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                     {/* Content Area */}
                     <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8 scrollbar-none">
                         <div className="space-y-2">
-                            <h2 className="text-2xl md:text-4xl font-black text-sweet-brown tracking-tighter leading-none">{store.nameJP}</h2>
-                            <p className="text-sm md:text-lg font-bold text-sweet-brown/40">{store.nameCH}</p>
+                            <h2 className="text-2xl md:text-3xl font-black text-sweet-brown tracking-tighter leading-none">
+                                {lang === "ja" ? store.nameJP : store.nameCH}
+                            </h2>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <p className="text-sm font-bold text-sweet-brown/40">
+                                    {lang === "ja" ? store.nameCH : store.nameJP}
+                                </p>
+                                {userLocation && (
+                                    <span className="text-[10px] font-black text-pink-500 bg-pink-50 px-2 py-0.5 rounded-lg border border-pink-100/50 flex items-center gap-1">
+                                        📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <div className="flex flex-wrap gap-2 md:gap-3">
                             <button
                                 onClick={() => onToggleStat("favorites", store.id)}
-                                className={`flex-1 min-w-[120px] py-3 md:py-4 rounded-2xl md:rounded-3xl border-2 font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${isFavorite ? "bg-pink-400 border-pink-400 text-white shadow-lg shadow-pink-100" : "bg-white border-pink-100 text-pink-400 hover:bg-pink-50"}`}
+                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isFavorite ? "bg-pink-400 border-pink-400 text-white shadow-lg shadow-pink-100" : "bg-white border-pink-100 text-pink-400 hover:bg-pink-50"}`}
                             >
-                                <Heart size={18} fill={isFavorite ? "currentColor" : "none"} /> {isFavorite ? "御用達店から外す" : "ワタシの御用達店"}
+                                <Heart size={16} fill={isFavorite ? "currentColor" : "none"} /> {isFavorite ? t.favoriteRemove : t.favoriteAdd}
                             </button>
                             <button
                                 onClick={() => onToggleStat("visited", store.id)}
-                                className={`flex-1 min-w-[120px] py-3 md:py-4 rounded-2xl md:rounded-3xl border-2 font-black text-xs md:text-sm transition-all flex items-center justify-center gap-2 ${isVisited ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-100" : "bg-white border-orange-100 text-orange-500 hover:bg-orange-50"}`}
+                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isVisited ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-100" : "bg-white border-orange-100 text-orange-500 hover:bg-orange-50"}`}
                             >
-                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
-                                {isVisited ? "行きたいリスト追加済！" : "行ってみたい！"}
+                                <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${isVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
+                                {isVisited ? t.visitedRemove : t.visitedAdd}
                             </button>
                         </div>
 
-                        {store.descriptionJP && (
+                        {((lang === "ja" && store.descriptionJP) || (lang === "zh" && store.descriptionCH)) && (
                             <div className="space-y-3">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Description</h3>
-                                <p className="text-sweet-brown/80 leading-relaxed text-sm md:text-base font-medium whitespace-pre-wrap">{store.descriptionJP}</p>
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{t.description}</h3>
+                                <p className="text-sweet-brown/80 leading-relaxed text-sm font-medium whitespace-pre-wrap">
+                                    {lang === "ja" ? store.descriptionJP : store.descriptionCH}
+                                </p>
                             </div>
                         )}
 
@@ -182,9 +208,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                         href={store.buyUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full px-6 py-4 bg-orange-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-3 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-100 mb-2"
+                                        className="w-full px-6 py-4 bg-orange-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-3 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-100 mb-2 cursor-pointer"
                                     >
-                                        <ShoppingBag size={20} /> 商品を購入する
+                                        <ShoppingBag size={20} /> {t.buy}
                                     </a>
                                 )}
                                 {store.website && (
@@ -192,9 +218,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                         href={store.website}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-colors"
+                                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-colors cursor-pointer"
                                     >
-                                        <Globe size={14} /> Official Website
+                                        <Globe size={14} /> {t.website}
                                     </a>
                                 )}
                                 {store.instagram && (
@@ -202,9 +228,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                         href={store.instagram}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-gradient-to-tr from-yellow-100 via-pink-100 to-purple-100 text-pink-600 rounded-xl text-xs font-black flex items-center gap-2 hover:opacity-80 transition-opacity"
+                                        className="px-4 py-2 bg-gradient-to-tr from-yellow-50 via-pink-50 to-purple-50 text-pink-600 rounded-xl text-xs font-black flex items-center gap-2 hover:opacity-80 transition-opacity border border-pink-100/30 cursor-pointer"
                                     >
-                                        <Instagram size={14} /> Instagram
+                                        <Instagram size={14} /> {t.instagram}
                                     </a>
                                 )}
                             </div>
@@ -212,11 +238,10 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
 
                         {(store.videos && store.videos.length > 0 && store.videos.some(v => v)) && (
                             <div className="space-y-4">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">YouTube Snippets</h3>
+                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{t.youtube}</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {store.videos.map((v, i) => {
                                         if (!v) return null;
-                                        // YouTube ID parsing logic including shorts support
                                         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/;
                                         const match = v.match(regExp);
                                         const videoId = (match && match[2].length === 11) ? match[2] : null;
@@ -243,9 +268,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat }: St
                                 href={`https://www.google.com/maps/dir/?api=1&destination=${store.lat},${store.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full py-4 md:py-5 bg-sweet-brown text-white font-black rounded-2xl md:rounded-3xl shadow-xl flex items-center justify-center gap-3 hover:bg-sweet-brown/90 transition-all uppercase tracking-widest text-xs md:text-sm"
+                                className="w-full py-4 bg-sweet-brown text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:bg-sweet-brown/90 transition-all uppercase tracking-widest text-xs cursor-pointer"
                             >
-                                <ExternalLink size={20} /> Google Maps でルート検索
+                                <ExternalLink size={18} /> {t.route}
                             </a>
                         </div>
                     </div>
