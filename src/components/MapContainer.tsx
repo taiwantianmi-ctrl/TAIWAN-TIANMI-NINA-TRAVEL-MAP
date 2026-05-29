@@ -3,11 +3,11 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Heart, Eye } from "lucide-react";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
-import { mapStyle } from "@/lib/mapStyles";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
 
 interface MapContainerProps {
     stores: Store[];
@@ -16,9 +16,11 @@ interface MapContainerProps {
     userStats: { visited: string[]; favorites: string[] };
     isAdminMode?: boolean;
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
+    onToggleStat?: (type: "visited" | "favorites", id: string) => void;
+    lang?: "ja" | "zh";
 }
 
-export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect }: MapContainerProps) {
+export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, lang = "ja" }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +37,17 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+    const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
@@ -453,7 +466,6 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 mapId={"bf51a910020faedc"}
                 disableDefaultUI={true}
                 gestureHandling={"greedy"}
-                styles={mapStyle}
                 className="w-full h-full"
                 onClick={(e) => {
                     setShowSearchResults(false);
@@ -527,11 +539,47 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                             className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
+                                            {/* ポップアップを閉じる「×」ボタン */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActivePopup(null);
+                                                }}
+                                                className="absolute top-2.5 right-2.5 p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors z-50 flex items-center justify-center cursor-pointer shadow-sm"
+                                                title="閉じる"
+                                            >
+                                                <X size={12} strokeWidth={2.5} />
+                                            </button>
+
+                                            <div className="text-xs font-black text-sweet-brown mb-2 text-center px-6 truncate">{store.nameJP}</div>
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
                                                 <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
+                                                    {/* YouTube動画を閉じる「×」ボタン */}
+                                                    <button 
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            e.preventDefault();
+                                                            
+                                                            // 動画を閉じる：videoIdをnullにし、代わりの画像があればそれを表示
+                                                            let nextImageUrl: string | null = null;
+                                                            if (store.images && store.images.length > 0) {
+                                                                const randIdx = Math.floor(Math.random() * store.images.length);
+                                                                nextImageUrl = store.images[randIdx];
+                                                            }
+                                                            setActivePopup({
+                                                                ...activePopup,
+                                                                videoId: null,
+                                                                imageUrl: nextImageUrl
+                                                            });
+                                                        }}
+                                                        className="absolute top-2 right-2 z-30 p-1.5 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-200 border border-white/20 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md"
+                                                        title="動画を閉じる"
+                                                    >
+                                                        <X size={12} strokeWidth={2.5} />
+                                                    </button>
+
                                                     <a 
                                                         href={`https://www.youtube.com/watch?v=${activePopup.videoId}`}
                                                         target="_blank"
