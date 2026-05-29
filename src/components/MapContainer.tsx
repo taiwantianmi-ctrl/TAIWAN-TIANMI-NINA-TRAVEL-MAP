@@ -18,9 +18,24 @@ interface MapContainerProps {
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
     onToggleStat?: (type: "visited" | "favorites", id: string) => void;
     lang?: "ja" | "zh";
+    onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
+    focusedStore?: Store | null;
+    onPopupActiveChange?: (active: boolean) => void;
 }
 
-export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, lang = "ja" }: MapContainerProps) {
+export function MapContainer({ 
+    stores, 
+    genres, 
+    onStoreSelect, 
+    userStats, 
+    isAdminMode, 
+    onLocationSelect, 
+    onToggleStat, 
+    lang = "ja", 
+    onUserLocationChange, 
+    focusedStore, 
+    onPopupActiveChange 
+}: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +64,14 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    const updateActivePopup = useCallback((val: typeof activePopup) => {
+        setActivePopup(val);
+        if (onPopupActiveChange) {
+            onPopupActiveChange(val !== null);
+        }
+    }, [onPopupActiveChange]);
+
+
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
         const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/);
@@ -73,8 +96,19 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             imageUrl = store.images[randIdx];
         }
 
-        setActivePopup({ storeId: store.id, videoId, imageUrl });
-    }, [activePopup?.storeId]);
+        updateActivePopup({ storeId: store.id, videoId, imageUrl });
+    }, [activePopup?.storeId, updateActivePopup]);
+
+    useEffect(() => {
+        if (focusedStore && map) {
+            const offsetLat = isMobile ? focusedStore.lat + 0.0025 : focusedStore.lat;
+            map.panTo({ lat: offsetLat, lng: focusedStore.lng });
+            if (map.getZoom()! < 15) {
+                map.setZoom(15.2);
+            }
+            handleMarkerHover(focusedStore);
+        }
+    }, [focusedStore, map, isMobile, handleMarkerHover]);
 
     const zoomToAll = useCallback(() => {
         if (!map || stores.length === 0) return;
@@ -316,11 +350,30 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
     const filteredStoreResults = useMemo(() => {
         if (!userSearchQuery) return [];
-        return stores.filter(s =>
-            s.nameJP.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
-            s.nameCH.toLowerCase().includes(userSearchQuery.toLowerCase())
-        ).slice(0, 5);
-    }, [userSearchQuery, stores]);
+        const query = userSearchQuery.toLowerCase();
+        return stores.filter(s => {
+            const nameJP = s.nameJP?.toLowerCase() || "";
+            const nameCH = s.nameCH?.toLowerCase() || "";
+            const addressJP = s.addressJP?.toLowerCase() || "";
+            const addressCH = s.addressCH?.toLowerCase() || "";
+            const descJP = s.descriptionJP?.toLowerCase() || "";
+            const descCH = s.descriptionCH?.toLowerCase() || "";
+            
+            // Search genres
+            const genreNames = s.genres.map(gId => {
+                const g = genres.find(genre => genre.id === gId);
+                return g ? `${g.nameJP} ${g.nameCH}`.toLowerCase() : "";
+            }).join(" ");
+
+            return nameJP.includes(query) || 
+                   nameCH.includes(query) || 
+                   addressJP.includes(query) || 
+                   addressCH.includes(query) ||
+                   descJP.includes(query) ||
+                   descCH.includes(query) ||
+                   genreNames.includes(query);
+        }).slice(0, 5);
+    }, [userSearchQuery, stores, genres]);
 
     const toggleTracking = () => {
         if (!navigator.geolocation) {
@@ -334,6 +387,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 watchIdRef.current = null;
             }
             setIsTracking(false);
+            setUserLocation(null);
+            if (onUserLocationChange) onUserLocationChange(null);
             toast.success("現在地の追跡を停止しました");
         } else {
             setIsTracking(true);
@@ -346,6 +401,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                         lng: position.coords.longitude
                     };
                     setUserLocation(newPos);
+                    if (onUserLocationChange) onUserLocationChange(newPos);
                     if (map && isTracking) {
                         map.panTo(newPos);
                     }
@@ -353,6 +409,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 (error) => {
                     console.error("Geolocation error:", error);
                     setIsTracking(false);
+                    setUserLocation(null);
+                    if (onUserLocationChange) onUserLocationChange(null);
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
             );
@@ -469,6 +527,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 className="w-full h-full"
                 onClick={(e) => {
                     setShowSearchResults(false);
+                    updateActivePopup(null);
                     if (isAdminMode && e.detail.latLng && onLocationSelect) {
                         const { lat, lng } = e.detail.latLng;
                         setTempPin({ lat, lng });
@@ -489,13 +548,28 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                             zIndex={100}
                         >
                             <div
-                                onMouseEnter={() => handleMarkerHover(store)}
-                                onMouseLeave={() => setActivePopup(null)}
+                                onMouseEnter={() => !isMobile && handleMarkerHover(store)}
+                                onMouseLeave={() => !isMobile && updateActivePopup(null)}
                                 onClick={(e) => {
-                                    if (activePopup?.storeId === store.id) {
-                                        onStoreSelect(store);
+                                    e.stopPropagation();
+                                    if (isMobile) {
+                                        const offsetLat = store.lat + 0.0025;
+                                        map?.panTo({ lat: offsetLat, lng: store.lng });
+                                        if ((map?.getZoom() || 0) < 15) {
+                                            map?.setZoom(15.2);
+                                        }
+                                        if (activePopup?.storeId === store.id) {
+                                            onStoreSelect(store);
+                                            updateActivePopup(null);
+                                        } else {
+                                            handleMarkerHover(store);
+                                        }
                                     } else {
-                                        handleMarkerHover(store);
+                                        if (activePopup?.storeId === store.id) {
+                                            onStoreSelect(store);
+                                        } else {
+                                            handleMarkerHover(store);
+                                        }
                                     }
                                 }}
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
@@ -604,7 +678,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setActivePopup(null);
+                                                        updateActivePopup(null);
                                                         onStoreSelect(store);
                                                     }}
                                                     className="w-[134px] py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[9px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
@@ -624,6 +698,18 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                     <AdvancedMarker position={tempPin}>
                         <div className="relative animate-bounce">
                             <MapPin className="text-pink-600 fill-pink-200" size={44} />
+                        </div>
+                    </AdvancedMarker>
+                )}
+
+                {/* GPS Current Location Marker */}
+                {userLocation && (
+                    <AdvancedMarker position={userLocation} zIndex={1000}>
+                        <div className="relative flex items-center justify-center">
+                            <span className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-blue-400 opacity-75"></span>
+                            <div className="relative rounded-full h-5 w-5 bg-blue-500 border-3 border-white shadow-xl flex items-center justify-center">
+                                <div className="h-2 w-2 rounded-full bg-white animate-pulse"></div>
+                            </div>
                         </div>
                     </AdvancedMarker>
                 )}

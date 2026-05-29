@@ -74,7 +74,7 @@ export function PWAInstallGuide() {
                                                 <Share size={16} />
                                             </div>
                                             <p className="text-xs font-bold text-sweet-brown pt-1">
-                                                1. 画面下の<span className="text-blue-600">「共有ボタン」</span>をタップ
+                                                1. 画面上の<span className="text-blue-600">「共有ボタン」</span>をタップ
                                             </p>
                                         </div>
                                         <div className="flex items-start gap-4">
