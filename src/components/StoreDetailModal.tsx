@@ -63,17 +63,18 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     onClick={onClose}
-                    className="absolute inset-0 bg-sweet-brown/40 backdrop-blur-sm"
+                    className="absolute inset-0 bg-sweet-brown/20 backdrop-blur-md"
                 />
 
                 <motion.div
                     initial={{ scale: 0.9, opacity: 0, y: 20 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
                     exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                    className="relative bg-white w-full max-w-lg max-h-[85vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col border-4 border-white"
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    className="relative bg-white/95 backdrop-blur-2xl w-full max-w-lg max-h-[85vh] rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_30px_80px_rgba(93,64,55,0.18)] overflow-hidden flex flex-col border-4 border-white/80"
                 >
                     {/* Header Image Area */}
-                    <div className="relative h-48 md:h-64 bg-gray-100 flex-shrink-0 group overflow-hidden">
+                    <div className="relative h-48 md:h-64 bg-gray-50 flex-shrink-0 group overflow-hidden">
                         <AnimatePresence mode="popLayout" initial={false}>
                             {store.images && store.images.length > 0 ? (
                                 <motion.div
@@ -115,24 +116,28 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                         {/* Premium Navigation Arrows */}
                         {store.images && store.images.length > 1 && (
                             <div className="absolute inset-0 flex items-center justify-between px-4 pointer-events-none">
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev > 0 ? prev - 1 : store.images.length - 1);
                                     }}
-                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border border-white cursor-pointer"
+                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
                                 >
                                     <ChevronLeft size={24} strokeWidth={3} />
-                                </button>
-                                <button
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.1 }}
+                                    whileTap={{ scale: 0.9 }}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev < store.images.length - 1 ? prev + 1 : 0);
                                     }}
-                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 hover:scale-110 active:scale-90 transition-all pointer-events-auto border border-white cursor-pointer"
+                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
                                 >
                                     <ChevronRight size={24} strokeWidth={3} />
-                                </button>
+                                </motion.button>
                             </div>
                         )}
 
@@ -149,12 +154,14 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                             </div>
                         )}
 
-                        <button
+                        <motion.button
+                            whileHover={{ scale: 1.1, rotate: 90 }}
+                            whileTap={{ scale: 0.9 }}
                             onClick={onClose}
-                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 hover:rotate-90 transition-all duration-300 z-10 cursor-pointer"
+                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 transition-all duration-300 z-10 cursor-pointer border border-white/50"
                         >
                             <X size={24} strokeWidth={2.5} />
-                        </button>
+                        </motion.button>
                     </div>
 
                     {/* Content Area */}
@@ -173,19 +180,23 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                         </div>
 
                         <div className="flex flex-wrap gap-2 md:gap-3">
-                            <button
+                            <motion.button
+                                whileHover={{ y: -2, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => onToggleStat("favorites", store.id)}
-                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isFavorite ? "bg-pink-400 border-pink-400 text-white shadow-lg shadow-pink-100" : "bg-white border-pink-100 text-pink-400 hover:bg-pink-50"}`}
+                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isFavorite ? "bg-pink-400 border-pink-400 text-white shadow-lg shadow-pink-100" : "bg-white border-pink-100 text-pink-400 hover:bg-pink-50/50"}`}
                             >
                                 <Heart size={16} fill={isFavorite ? "currentColor" : "none"} /> {isFavorite ? t.favoriteRemove : t.favoriteAdd}
-                            </button>
-                            <button
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ y: -2, scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => onToggleStat("visited", store.id)}
-                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isVisited ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-100" : "bg-white border-orange-100 text-orange-500 hover:bg-orange-50"}`}
+                                className={`flex-1 min-w-[120px] py-3.5 rounded-2xl border-2 font-black text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${isVisited ? "bg-orange-500 border-orange-500 text-white shadow-lg shadow-orange-100" : "bg-white border-orange-100 text-orange-500 hover:bg-orange-50/50"}`}
                             >
                                 <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ${isVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
                                 {isVisited ? t.visitedRemove : t.visitedAdd}
-                            </button>
+                            </motion.button>
                         </div>
 
                         {store.descriptionJP && (
@@ -200,34 +211,40 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                         {(store.website || store.instagram || store.buyUrl) && (
                             <div className="flex flex-wrap gap-2 pt-2">
                                 {store.buyUrl && (
-                                    <a
+                                    <motion.a
+                                        whileHover={{ y: -2, scale: 1.01 }}
+                                        whileTap={{ scale: 0.99 }}
                                         href={store.buyUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="w-full px-6 py-4 bg-orange-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-3 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-100 mb-2 cursor-pointer"
+                                        className="w-full px-6 py-4 bg-gradient-to-r from-orange-400 to-amber-500 text-white rounded-2xl text-sm font-black flex items-center justify-center gap-3 hover:opacity-95 transition-all shadow-lg shadow-orange-100 mb-2 cursor-pointer"
                                     >
                                         <ShoppingBag size={20} /> {t.buy}
-                                    </a>
+                                    </motion.a>
                                 )}
                                 {store.website && (
-                                    <a
+                                    <motion.a
+                                        whileHover={{ y: -1, scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
                                         href={store.website}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100 transition-colors cursor-pointer"
+                                        className="px-4 py-2 bg-blue-50 text-blue-600 rounded-xl text-xs font-black flex items-center gap-2 hover:bg-blue-100/85 transition-colors cursor-pointer border border-blue-100/50"
                                     >
                                         <Globe size={14} /> {t.website}
-                                    </a>
+                                    </motion.a>
                                 )}
                                 {store.instagram && (
-                                    <a
+                                    <motion.a
+                                        whileHover={{ y: -1, scale: 1.03 }}
+                                        whileTap={{ scale: 0.97 }}
                                         href={store.instagram}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="px-4 py-2 bg-gradient-to-tr from-yellow-50 via-pink-50 to-purple-50 text-pink-600 rounded-xl text-xs font-black flex items-center gap-2 hover:opacity-80 transition-opacity border border-pink-100/30 cursor-pointer"
+                                        className="px-4 py-2 bg-gradient-to-tr from-yellow-50 via-pink-50 to-purple-50 text-pink-600 rounded-xl text-xs font-black flex items-center gap-2 hover:opacity-90 transition-opacity border border-pink-100/40 cursor-pointer"
                                     >
                                         <Instagram size={14} /> {t.instagram}
-                                    </a>
+                                    </motion.a>
                                 )}
                             </div>
                         )}
@@ -260,14 +277,16 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                         )}
 
                         <div className="pt-4">
-                            <a
+                            <motion.a
+                                whileHover={{ y: -2, scale: 1.01 }}
+                                whileTap={{ scale: 0.99 }}
                                 href={`https://www.google.com/maps/dir/?api=1&destination=${store.lat},${store.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="w-full py-4 bg-sweet-brown text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:bg-sweet-brown/90 transition-all uppercase tracking-widest text-xs cursor-pointer"
+                                className="w-full py-4 bg-sweet-brown text-white font-black rounded-2xl shadow-xl flex items-center justify-center gap-3 hover:bg-sweet-brown/95 transition-all uppercase tracking-widest text-xs cursor-pointer border border-sweet-brown"
                             >
                                 <ExternalLink size={18} /> {t.route}
-                            </a>
+                            </motion.a>
                         </div>
                     </div>
                 </motion.div>

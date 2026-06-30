@@ -7,7 +7,7 @@ import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, Che
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
+import { calculateDistance, formatDistance, getOptimizedImageUrl, AREAS } from "@/lib/utils";
 
 interface MapContainerProps {
     stores: Store[];
@@ -21,6 +21,7 @@ interface MapContainerProps {
     onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
     focusedStore?: Store | null;
     onPopupActiveChange?: (active: boolean) => void;
+    selectedAreaId?: string;
 }
 
 export function MapContainer({ 
@@ -34,7 +35,8 @@ export function MapContainer({
     lang = "ja", 
     onUserLocationChange, 
     focusedStore, 
-    onPopupActiveChange 
+    onPopupActiveChange,
+    selectedAreaId
 }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
@@ -110,14 +112,6 @@ export function MapContainer({
         }
     }, [focusedStore, map, isMobile, handleMarkerHover]);
 
-    const zoomToAll = useCallback(() => {
-        if (!map || stores.length === 0) return;
-        const bounds = new google.maps.LatLngBounds();
-        stores.forEach(store => bounds.extend({ lat: store.lat, lng: store.lng }));
-        map.fitBounds(bounds, { top: 120, bottom: 40, left: 40, right: 40 });
-        triggerTools();
-    }, [map, stores]);
-
     const triggerTools = (manualToggle = false) => {
         if (manualToggle) {
             setShowTools(!showTools);
@@ -130,6 +124,14 @@ export function MapContainer({
             setShowTools(false);
         }, 2000);
     };
+
+    const zoomToAll = useCallback(() => {
+        if (!map || stores.length === 0) return;
+        const bounds = new google.maps.LatLngBounds();
+        stores.forEach(store => bounds.extend({ lat: store.lat, lng: store.lng }));
+        map.fitBounds(bounds, { top: 120, bottom: 40, left: 40, right: 40 });
+        triggerTools();
+    }, [map, stores]);
 
     const jumpWithTransition = useCallback((targetPos: { lat: number; lng: number }, targetZoom: number) => {
         if (!map) return;
@@ -198,6 +200,19 @@ export function MapContainer({
 
         requestAnimationFrame(animate);
     }, [map]);
+
+    useEffect(() => {
+        if (selectedAreaId && map) {
+            const area = AREAS.find(a => a.id === selectedAreaId);
+            if (area) {
+                if (selectedAreaId === "all") {
+                    zoomToAll();
+                } else {
+                    smoothZoomTo(area.center, area.zoom);
+                }
+            }
+        }
+    }, [selectedAreaId, map, zoomToAll, smoothZoomTo]);
 
     // Initialize Clusterer
     useEffect(() => {

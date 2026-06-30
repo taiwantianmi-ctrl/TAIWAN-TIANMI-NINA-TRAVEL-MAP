@@ -8,14 +8,16 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X } from "lucide-react";
-import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
+import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X, Share2 } from "lucide-react";
+import { calculateDistance, formatDistance, getOptimizedImageUrl, getStoreAreaId, AREAS } from "@/lib/utils";
+import { toast } from "react-hot-toast";
 
 export default function Home() {
   const { stores, genres, loading } = useStores();
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
+  const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
   const [showOnlyVisited, setShowOnlyVisited] = useState(false);
   const [userStats, setUserStats] = useState<UserStats>({ visited: [], favorites: [] });
   const [editingStore, setEditingStore] = useState<Partial<Store> | null>(null);
@@ -41,8 +43,35 @@ export default function Home() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Load user stats from LocalStorage
+  // Load user stats from URL or LocalStorage
   useEffect(() => {
+    // 1. Check URL parameters first for shared lists
+    const params = new URLSearchParams(window.location.search);
+    const favsParam = params.get("favs");
+    const visitedParam = params.get("visited");
+
+    if (favsParam || visitedParam) {
+      const newStats: UserStats = {
+        favorites: favsParam ? favsParam.split(",").filter(Boolean) : [],
+        visited: visitedParam ? visitedParam.split(",").filter(Boolean) : [],
+      };
+      setUserStats(newStats);
+      localStorage.setItem("taiwan_sweet_stats", JSON.stringify(newStats));
+      toast.success("共有されたリストを読み込みました！", {
+        icon: "🍬",
+        style: {
+          borderRadius: "1rem",
+          background: "#5D4037",
+          color: "#fff",
+          fontWeight: "bold",
+        }
+      });
+      // Clean up URL parameters to keep it clean
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    // 2. Fallback to LocalStorage
     const saved = localStorage.getItem("taiwan_sweet_stats");
     if (saved) {
       try {
@@ -78,7 +107,39 @@ export default function Home() {
     saveUserStats({ ...userStats, [type]: updated });
   };
 
+  const handleShareList = () => {
+    if (userStats.favorites.length === 0 && userStats.visited.length === 0) {
+      toast.error("共有するお気に入りまたは行ってみたいお店がありません");
+      return;
+    }
 
+    const params = new URLSearchParams();
+    if (userStats.favorites.length > 0) {
+      params.set("favs", userStats.favorites.join(","));
+    }
+    if (userStats.visited.length > 0) {
+      params.set("visited", userStats.visited.join(","));
+    }
+
+    const shareUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    
+    navigator.clipboard.writeText(shareUrl)
+      .then(() => {
+        toast.success("共有リンクをコピーしました！", {
+          icon: "🔗",
+          style: {
+            borderRadius: "1rem",
+            background: "#5D4037",
+            color: "#fff",
+            fontWeight: "bold",
+          }
+        });
+      })
+      .catch((err) => {
+        console.error("Failed to copy share link", err);
+        toast.error("リンクのコピーに失敗しました");
+      });
+  };
 
   const toggleFilterGenre = (id: string) => {
     setSelectedGenreIds(prev =>
@@ -88,6 +149,7 @@ export default function Home() {
 
   const resetApp = () => {
     setSelectedGenreIds([]);
+    setSelectedAreaId("all");
     setShowOnlyVisited(false);
     setSelectedStore(null);
     setShowAdmin(false);
@@ -96,6 +158,9 @@ export default function Home() {
   };
 
   let filteredStores = stores;
+  if (selectedAreaId !== "all") {
+    filteredStores = filteredStores.filter(store => getStoreAreaId(store) === selectedAreaId);
+  }
   if (selectedGenreIds.length > 0) {
     filteredStores = filteredStores.filter(store => store.genres?.some(gId => selectedGenreIds.includes(gId)));
   }
@@ -114,6 +179,41 @@ export default function Home() {
   }, [filteredStores, userLocation, sortByDistance]);
 
   const finalStoresList = sortByDistance ? sortedStoresByDistance : filteredStores;
+
+  const [showAreaFilter, setShowAreaFilter] = useState(false);
+
+  // Common Area Filter UI component
+  const AreaFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
+    <motion.div
+      initial={{ y: -20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full' : ''}`}
+    >
+      <div className="h-full flex items-center p-3 md:px-6 gap-4">
+        <div className="flex items-center gap-3 shrink-0">
+          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
+            <MapPin size={18} />
+          </div>
+          <div className="text-left hidden lg:block">
+            <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Area Filter</p>
+            <p className="text-[10px] font-bold text-gray-400">地域を選択</p>
+          </div>
+        </div>
+
+        <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
+          {AREAS.map(area => (
+            <button
+              key={area.id}
+              onClick={() => setSelectedAreaId(area.id)}
+              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedAreaId === area.id ? "bg-orange-500 text-white border-orange-500" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+            >
+              {area.name}
+            </button>
+          ))}
+        </div>
+      </div>
+    </motion.div>
+  );
 
   // Common Genre Filter UI component to be reused
   const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
@@ -220,7 +320,10 @@ export default function Home() {
                   {genres.map(genre => (
                     <button
                       key={genre.id}
-                      onClick={() => toggleFilterGenre(genre.id)}
+                      onClick={() => {
+                        toggleFilterGenre(genre.id);
+                        // Do not close so user can multi-select
+                      }}
                       className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                     >
                       <div
@@ -313,9 +416,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right: Statistics (Desktop Only) */}
+          {/* Right: Statistics & Share (Desktop Only) */}
           {!isMobile && (
             <div className="flex flex-row items-center gap-4 shrink-0">
+              {/* Share Button */}
+              <button
+                onClick={handleShareList}
+                className="bg-gradient-to-r from-pink-400 to-orange-400 hover:from-pink-500 hover:to-orange-500 text-white px-4 py-2.5 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              >
+                <Share2 size={14} />
+                <span>リストを共有</span>
+              </button>
+
               {/* Statistics */}
               <div className="flex items-center gap-2">
                 <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
@@ -333,10 +445,38 @@ export default function Home() {
           )}
         </div>
 
-        {/* Middle: Genre Filter - PC - Extends to Logo */}
+        {/* Middle: Area & Genre Filter - PC */}
         {!isMobile && (
-          <div className="mt-4 pointer-events-auto">
+          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 pointer-events-auto">
+            <AreaFilterUI isPC={true} />
             <GenreFilterUI isPC={true} />
+          </div>
+        )}
+
+        {/* Area Filter Bar - Mobile Position (Drawer Pop) */}
+        {isMobile && showAreaFilter && (
+          <div className="w-full px-2 mt-2">
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="bg-gray-50 rounded-2xl border-2 border-white shadow-sm overflow-hidden"
+            >
+              <div className="p-3 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
+                {AREAS.map(area => (
+                  <button
+                    key={area.id}
+                    onClick={() => {
+                      setSelectedAreaId(area.id);
+                      setShowAreaFilter(false);
+                    }}
+                    className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm ${selectedAreaId === area.id ? "bg-orange-500 text-white" : "bg-white text-sweet-brown hover:bg-gray-100"}`}
+                  >
+                    {area.name}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
           </div>
         )}
 
@@ -352,7 +492,20 @@ export default function Home() {
           <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 overflow-x-auto scrollbar-none pb-1 pointer-events-auto">
             <button
               onClick={() => {
+                setShowAreaFilter(!showAreaFilter);
+                setShowGenreFilter(false);
+                setBottomSheetState("collapsed");
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showAreaFilter ? 'bg-orange-400 text-white border-orange-400 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+            >
+              <MapPin size={12} />
+              <span>エリア</span>
+            </button>
+
+            <button
+              onClick={() => {
                 setShowGenreFilter(!showGenreFilter);
+                setShowAreaFilter(false);
                 setBottomSheetState("collapsed");
               }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showGenreFilter ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
@@ -366,6 +519,7 @@ export default function Home() {
                 setActiveTab("favorites");
                 setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
                 setShowGenreFilter(false);
+                setShowAreaFilter(false);
               }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
             >
@@ -378,11 +532,20 @@ export default function Home() {
                 setActiveTab("visited");
                 setBottomSheetState(bottomSheetState === "collapsed" ? "half" : bottomSheetState === "half" ? "full" : "collapsed");
                 setShowGenreFilter(false);
+                setShowAreaFilter(false);
               }}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
             >
               <CheckCircle size={12} />
               <span>行ってみたい ({userStats.visited.length})</span>
+            </button>
+
+            <button
+              onClick={handleShareList}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer bg-gradient-to-r from-pink-400 to-orange-400 text-white border-transparent"
+            >
+              <Share2 size={12} />
+              <span>共有</span>
             </button>
           </div>
         )}
@@ -393,6 +556,7 @@ export default function Home() {
         <MapContainer
           stores={finalStoresList}
           genres={genres}
+          selectedAreaId={selectedAreaId}
           onStoreSelect={(store) => {
             if (showAdmin) {
               setEditingStore(store);

@@ -43,3 +43,38 @@ export function getOptimizedImageUrl(url: string, size = 600): string {
     // 他の画像サービスやファイルパスはそのまま返す
     return url;
 }
+
+/**
+ * 台湾のエリア（地域）定義
+ */
+export interface Area {
+    id: string;
+    name: string;
+    keywords: string[];
+    center: { lat: number; lng: number };
+    zoom: number;
+}
+
+export const AREAS: Area[] = [
+    { id: "all", name: "台湾全土", keywords: [], center: { lat: 23.6, lng: 121.0 }, zoom: 7.8 },
+    { id: "taipei", name: "台北・桃園", keywords: ["台北", "新北", "基隆", "桃園"], center: { lat: 25.0330, lng: 121.5654 }, zoom: 12 },
+    { id: "taichung", name: "台中", keywords: ["台中", "彰化", "南投", "苗栗"], center: { lat: 24.1477, lng: 120.6736 }, zoom: 12 },
+    { id: "tainan", name: "台南・嘉義", keywords: ["台南", "嘉義", "雲林"], center: { lat: 23.0000, lng: 120.2000 }, zoom: 12 },
+    { id: "kaohsiung", name: "高雄・屏東", keywords: ["高雄", "屏東"], center: { lat: 22.6273, lng: 120.3014 }, zoom: 12 },
+    { id: "hualien", name: "宜蘭・花蓮・台東", keywords: ["花蓮", "宜蘭", "台東"], center: { lat: 23.9756, lng: 121.6046 }, zoom: 10 },
+];
+
+/**
+ * 店舗の住所から属するエリアIDを判定する
+ */
+export function getStoreAreaId(store: { addressJP?: string; addressCH?: string }): string {
+    const address = `${store.addressCH || ""} ${store.addressJP || ""}`.toLowerCase();
+    for (const area of AREAS) {
+        if (area.id === "all") continue;
+        if (area.keywords.some(keyword => address.includes(keyword.toLowerCase()))) {
+            return area.id;
+        }
+    }
+    return "other"; // 該当しない場合
+}
+
