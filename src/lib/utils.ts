@@ -65,9 +65,9 @@ export const AREAS: Area[] = [
 ];
 
 /**
- * 店舗の住所から属するエリアIDを判定する
+ * 店舗の住所から属するエリアIDを判定する（緯度経度によるフォールバック付き）
  */
-export function getStoreAreaId(store: { addressJP?: string; addressCH?: string }): string {
+export function getStoreAreaId(store: { addressJP?: string; addressCH?: string; lat?: number; lng?: number }): string {
     const address = `${store.addressCH || ""} ${store.addressJP || ""}`.toLowerCase();
     for (const area of AREAS) {
         if (area.id === "all") continue;
@@ -75,6 +75,18 @@ export function getStoreAreaId(store: { addressJP?: string; addressCH?: string }
             return area.id;
         }
     }
+
+    // フォールバック: 緯度経度から大まかなエリアを判定する
+    if (store.lat !== undefined && store.lng !== undefined) {
+        const lat = store.lat;
+        const lng = store.lng;
+        if (lat > 24.8) return "taipei"; // 台北・桃園
+        if (lat > 23.8 && lat <= 24.8 && lng < 121.2) return "taichung"; // 台中
+        if (lat > 22.9 && lat <= 23.8 && lng < 120.6) return "tainan"; // 台南・嘉義
+        if (lat <= 22.9 && lng < 120.9) return "kaohsiung"; // 高雄・屏東
+        if (lng >= 120.9) return "hualien"; // 東部（宜蘭・花蓮・台東）
+    }
+
     return "other"; // 該当しない場合
 }
 

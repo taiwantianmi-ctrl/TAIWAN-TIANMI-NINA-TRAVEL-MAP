@@ -57,6 +57,7 @@ export function MapContainer({
     const [isMobile, setIsMobile] = useState(false);
     const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const prevAreaIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -208,7 +209,8 @@ export function MapContainer({
     }, [map]);
 
     useEffect(() => {
-        if (selectedAreaId && map) {
+        if (selectedAreaId && map && selectedAreaId !== prevAreaIdRef.current) {
+            prevAreaIdRef.current = selectedAreaId;
             const area = AREAS.find(a => a.id === selectedAreaId);
             if (area) {
                 if (selectedAreaId === "all") {
@@ -616,7 +618,7 @@ export function MapContainer({
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
                                 style={{
                                     pointerEvents: 'auto',
-                                    transform: `scale(${zoom <= 9 ? 0.7 : zoom <= 11 ? 0.85 : zoom <= 13 ? 1.0 : zoom <= 15 ? 1.25 : 1.5})`,
+                                    transform: `scale(${zoom <= 9 ? 1.4 : zoom <= 11 ? 1.7 : zoom <= 13 ? 2.0 : zoom <= 15 ? 2.5 : 3.0})`,
                                     zIndex: isActive ? 9999 : 100
                                 }}
                             >
