@@ -182,21 +182,21 @@ export default function Home() {
 
   const [showAreaFilter, setShowAreaFilter] = useState(false);
 
-  // Common Area Filter UI component
+  // Common Area Filter UI component (Map/Travel Theme - Orange & Capsule Buttons)
   const AreaFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full' : ''}`}
+      className={`bg-[#FDF8F5] rounded-[2rem] border-2 border-[#FFE8DF]/60 shadow-[0_8px_20px_rgba(251,146,60,0.04)] overflow-hidden ${isPC ? 'h-full' : ''}`}
     >
       <div className="h-full flex items-center p-3 md:px-6 gap-4">
         <div className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 bg-orange-50 rounded-xl flex items-center justify-center text-orange-500">
+          <div className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-md shadow-orange-100">
             <MapPin size={18} />
           </div>
           <div className="text-left hidden lg:block">
-            <p className="text-[10px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Area Filter</p>
-            <p className="text-[10px] font-bold text-gray-400">地域を選択</p>
+            <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none mb-1">Area Filter</p>
+            <p className="text-[10px] font-black text-[#8C6D62]">地域を選択</p>
           </div>
         </div>
 
@@ -205,7 +205,11 @@ export default function Home() {
             <button
               key={area.id}
               onClick={() => setSelectedAreaId(area.id)}
-              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedAreaId === area.id ? "bg-orange-500 text-white border-orange-500" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+              className={`px-4 py-2 rounded-full text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
+                selectedAreaId === area.id 
+                  ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100 hover:opacity-95" 
+                  : "bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50"
+              }`}
             >
               {area.name}
             </button>
@@ -215,35 +219,43 @@ export default function Home() {
     </motion.div>
   );
 
-  // Common Genre Filter UI component to be reused
+  // Common Genre Filter UI component to be reused (Sweet/Pastry Theme - Pink & Soft Square Buttons)
   const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
     <motion.div
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      className={`bg-gray-50 rounded-2xl md:rounded-[2rem] border-2 border-white shadow-sm overflow-hidden ${isPC ? 'h-full' : ''}`}
+      className={`bg-[#FFF9FA] rounded-[2rem] border-2 border-[#FFE4E8]/60 shadow-[0_8px_20px_rgba(244,63,94,0.04)] overflow-hidden ${isPC ? 'h-full' : ''}`}
     >
       {isPC ? (
         <div className="h-full flex items-center p-3 md:px-6 gap-4">
           <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
+            <div className="w-10 h-10 bg-pink-500 text-white rounded-2xl flex items-center justify-center shadow-md shadow-pink-100">
               <LayoutGrid size={18} />
             </div>
             <div className="text-left hidden lg:block">
-              <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-              <p className="text-[10px] font-bold text-gray-400">マルチ選択可</p>
+              <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
+              <p className="text-[10px] font-black text-[#8C6D62]">マルチ選択可</p>
             </div>
           </div>
 
           <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
             <button
               onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); }}
-              className={`px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white border-sweet-brown" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+              className={`px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
+                selectedGenreIds.length === 0 && !showOnlyVisited 
+                  ? "bg-sweet-brown text-white border-sweet-brown shadow-md" 
+                  : "bg-white text-sweet-brown hover:bg-gray-50 border-gray-100"
+              }`}
             >
               すべて
             </button>
             <button
               onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-white text-orange-500 hover:bg-orange-50 border-orange-100"}`}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
+                showOnlyVisited 
+                  ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" 
+                  : "bg-white text-orange-500 hover:bg-orange-50 border-orange-100"
+              }`}
             >
               <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
               行ってみたい！
@@ -252,11 +264,15 @@ export default function Home() {
               <button
                 key={genre.id}
                 onClick={() => toggleFilterGenre(genre.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white border-pastel-pink ring-2 ring-white/50" : "bg-white text-sweet-brown hover:bg-gray-100 border-gray-100"}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
+                  selectedGenreIds.includes(genre.id) 
+                    ? "bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-100" 
+                    : "bg-white text-sweet-brown hover:bg-pink-50/30 border-[#FFE4E8]/50"
+                }`}
               >
                 <div
                   style={{ backgroundColor: genre.color || "#ffffff" }}
-                  className="w-4 h-4 rounded flex items-center justify-center text-[10px] shadow-sm border border-white/20"
+                  className="w-4 h-4 rounded-lg flex items-center justify-center text-[10px] shadow-sm border border-white/20"
                 >
                   {genre.iconUrl}
                 </div>
@@ -270,15 +286,15 @@ export default function Home() {
           {/* Toggle Button for Mobile */}
           <button
             onClick={() => setShowGenreFilter(!showGenreFilter)}
-            className="w-full flex items-center justify-between px-4 py-3 md:py-4 text-sweet-brown hover:bg-gray-50/10 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 md:py-4 text-sweet-brown hover:bg-gray-50/10 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-pastel-pink/20 rounded-xl flex items-center justify-center text-pink-500">
+              <div className="w-8 h-8 md:w-10 md:h-10 bg-pink-500 text-white rounded-2xl flex items-center justify-center shadow-md">
                 <LayoutGrid size={18} />
               </div>
               <div className="text-left">
-                <p className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-                <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md">
+                <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
+                <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md text-[#5D4037]">
                   {selectedGenreIds.length > 0
                     ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
                     : "すべてのジャンル"}
@@ -303,16 +319,16 @@ export default function Home() {
                 exit={{ height: 0, opacity: 0 }}
                 className="overflow-hidden"
               >
-                <div className="p-3 md:p-4 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
+                <div className="p-3 md:p-4 border-t border-pink-100/30 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
                   <button
                     onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); setShowGenreFilter(false); }}
-                    className={`px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                    className={`px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm cursor-pointer ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                   >
                     すべて表示
                   </button>
                   <button
                     onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm border ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-gray-50 text-orange-500 hover:bg-orange-50 border-orange-100"}`}
+                    className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm border cursor-pointer ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-gray-50 text-orange-500 hover:bg-orange-50 border-orange-100"}`}
                   >
                     <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
                     行ってみたい！
@@ -322,13 +338,12 @@ export default function Home() {
                       key={genre.id}
                       onClick={() => {
                         toggleFilterGenre(genre.id);
-                        // Do not close so user can multi-select
                       }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all shadow-sm ${selectedGenreIds.includes(genre.id) ? "bg-pastel-pink text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm cursor-pointer ${selectedGenreIds.includes(genre.id) ? "bg-pink-500 text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
                     >
                       <div
                         style={{ backgroundColor: genre.color || "#ffffff" }}
-                        className="w-4 h-4 rounded flex items-center justify-center text-[10px] shadow-sm border border-white/20"
+                        className="w-4 h-4 rounded-lg flex items-center justify-center text-[10px] shadow-sm border border-white/20"
                       >
                         {genre.iconUrl}
                       </div>
@@ -460,9 +475,9 @@ export default function Home() {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="bg-gray-50 rounded-2xl border-2 border-white shadow-sm overflow-hidden"
+              className="bg-[#FDF8F5] rounded-[2rem] border-2 border-[#FFE8DF]/60 shadow-sm overflow-hidden"
             >
-              <div className="p-3 border-t border-gray-100 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
+              <div className="p-3 border-t border-[#FFE8DF]/30 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
                 {AREAS.map(area => (
                   <button
                     key={area.id}
@@ -470,7 +485,11 @@ export default function Home() {
                       setSelectedAreaId(area.id);
                       setShowAreaFilter(false);
                     }}
-                    className={`px-4 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm ${selectedAreaId === area.id ? "bg-orange-500 text-white" : "bg-white text-sweet-brown hover:bg-gray-100"}`}
+                    className={`px-4 py-2 rounded-full text-[10px] font-black transition-all shadow-sm cursor-pointer ${
+                      selectedAreaId === area.id 
+                        ? "bg-orange-500 text-white shadow-md shadow-orange-100" 
+                        : "bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50"
+                    }`}
                   >
                     {area.name}
                   </button>
