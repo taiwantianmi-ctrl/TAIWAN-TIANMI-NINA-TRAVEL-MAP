@@ -683,44 +683,18 @@ export function MapContainer({
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
-                                                <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner">
-                                                    {/* YouTube動画を閉じる「×」ボタン */}
-                                                    <button 
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            e.preventDefault();
-                                                            
-                                                            // 動画を閉じる：videoIdをnullにし、代わりの画像があればそれを表示
-                                                            let nextImageUrl: string | null = null;
-                                                            if (store.images && store.images.length > 0) {
-                                                                const randIdx = Math.floor(Math.random() * store.images.length);
-                                                                nextImageUrl = store.images[randIdx];
-                                                            }
-                                                            setActivePopup({
-                                                                ...activePopup,
-                                                                videoId: null,
-                                                                imageUrl: nextImageUrl
-                                                            });
-                                                        }}
-                                                        className="absolute top-1 right-1 z-30 p-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-200 border border-white/20 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md"
-                                                        title="動画を閉じる"
-                                                    >
-                                                        <X size={8} strokeWidth={2.5} />
-                                                    </button>
-
-                                                    <a 
-                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoId}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="absolute inset-0 z-20"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        title="YouTubeで見る"
+                                                <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner flex items-center justify-center">
+                                                    <img 
+                                                        src={`https://img.youtube.com/vi/${activePopup.videoId}/mqdefault.jpg`} 
+                                                        className="w-full h-full object-cover"
+                                                        alt="Video thumbnail"
                                                     />
-                                                    <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=hd720`}
-                                                        className="w-full h-full pointer-events-none z-10"
-                                                        allow="autoplay"
-                                                    />
+                                                    {/* 中央にYouTube風のプレイボタンをオーバーレイ */}
+                                                    <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
+                                                        <div className="w-9 h-6 bg-red-600 rounded-md flex items-center justify-center shadow-md">
+                                                            <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-0.5" />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
