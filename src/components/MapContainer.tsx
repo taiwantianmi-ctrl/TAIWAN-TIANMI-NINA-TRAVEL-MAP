@@ -563,13 +563,18 @@ export function MapContainer({
                     const info = getGenreInfo(store);
                     const isFav = userStats.favorites.includes(store.id);
                     const isVis = userStats.visited.includes(store.id);
+                    const isActive = activePopup?.storeId === store.id;
+
+                    // Determine if the store is in the upper half of the current map view
+                    const center = map?.getCenter();
+                    const isUpperHalf = center ? (store.lat > center.lat()) : false;
 
                     return (
                         <AdvancedMarker
                             key={store.id}
                             position={{ lat: store.lat, lng: store.lng }}
                             ref={(marker) => onMarkerMount(store.id, marker)}
-                            zIndex={100}
+                            zIndex={isActive ? 9999 : 100}
                         >
                             <div
                                 onMouseEnter={() => {
@@ -611,7 +616,8 @@ export function MapContainer({
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
                                 style={{
                                     pointerEvents: 'auto',
-                                    transform: `scale(${zoom <= 9 ? 0.7 : zoom <= 11 ? 0.85 : zoom <= 13 ? 1.0 : zoom <= 15 ? 1.25 : 1.5})`
+                                    transform: `scale(${zoom <= 9 ? 0.7 : zoom <= 11 ? 0.85 : zoom <= 13 ? 1.0 : zoom <= 15 ? 1.25 : 1.5})`,
+                                    zIndex: isActive ? 9999 : 100
                                 }}
                             >
                                 {/* Visited Checkmark Badge */}
@@ -640,13 +646,17 @@ export function MapContainer({
                                 
                                 {/* Interactive Popup */}
                                 <AnimatePresence>
-                                    {activePopup?.storeId === store.id && (
+                                    {isActive && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                            initial={{ opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }}
                                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                            exit={{ opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
+                                            className={`absolute ${
+                                                isUpperHalf 
+                                                    ? "top-[calc(100%+8px)]" 
+                                                    : "bottom-[calc(100%+8px)]"
+                                            } left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-[9999] cursor-default`}
                                             onClick={(e) => e.stopPropagation()}
                                             onMouseEnter={() => {
                                                 if (closeTimeoutRef.current) {
