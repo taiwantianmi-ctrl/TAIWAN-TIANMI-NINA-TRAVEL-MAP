@@ -658,7 +658,7 @@ export function MapContainer({
                                                 isUpperHalf 
                                                     ? "top-[calc(100%+8px)]" 
                                                     : "bottom-[calc(100%+8px)]"
-                                            } left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-[9999] cursor-default`}
+                                            } left-1/2 -translate-x-1/2 w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`}
                                             onClick={(e) => e.stopPropagation()}
                                             onMouseEnter={() => {
                                                 if (closeTimeoutRef.current) {
@@ -673,17 +673,17 @@ export function MapContainer({
                                                     e.stopPropagation();
                                                     setActivePopup(null);
                                                 }}
-                                                className="absolute top-2.5 right-2.5 p-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors z-50 flex items-center justify-center cursor-pointer shadow-sm"
+                                                className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors z-50 flex items-center justify-center cursor-pointer shadow-sm"
                                                 title="閉じる"
                                             >
-                                                <X size={12} strokeWidth={2.5} />
+                                                <X size={10} strokeWidth={2.5} />
                                             </button>
 
-                                            <div className="text-xs font-black text-sweet-brown mb-2 text-center px-6 truncate">{store.nameJP}</div>
+                                            <div className="text-[10px] font-black text-sweet-brown mb-1.5 text-center px-4 truncate">{store.nameJP}</div>
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
-                                                <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
+                                                <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner">
                                                     {/* YouTube動画を閉じる「×」ボタン */}
                                                     <button 
                                                         onClick={(e) => {
@@ -702,10 +702,10 @@ export function MapContainer({
                                                                 imageUrl: nextImageUrl
                                                             });
                                                         }}
-                                                        className="absolute top-2 right-2 z-30 p-1.5 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-200 border border-white/20 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md"
+                                                        className="absolute top-1 right-1 z-30 p-1 bg-black/60 hover:bg-black/80 backdrop-blur-sm text-white rounded-full transition-all duration-200 border border-white/20 hover:scale-105 active:scale-95 flex items-center justify-center cursor-pointer shadow-md"
                                                         title="動画を閉じる"
                                                     >
-                                                        <X size={12} strokeWidth={2.5} />
+                                                        <X size={8} strokeWidth={2.5} />
                                                     </button>
 
                                                     <a 
@@ -723,19 +723,19 @@ export function MapContainer({
                                                     />
                                                 </div>
                                             ) : activePopup.imageUrl ? (
-                                                <div className="aspect-video w-full bg-gray-100 rounded-xl overflow-hidden mb-2 shadow-inner">
+                                                <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
                                                     <img src={activePopup.imageUrl.includes('drive.google.com/uc') ? activePopup.imageUrl.replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w600') : activePopup.imageUrl} className="w-full h-full object-cover" />
                                                 </div>
                                             ) : null}
 
-                                            <div className="flex justify-center mt-2">
+                                            <div className="flex justify-center mt-1.5">
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         updateActivePopup(null);
                                                         onStoreSelect(store);
                                                     }}
-                                                    className="w-[134px] py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[9px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
+                                                    className="w-[100px] py-1 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-lg text-[8px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
                                                 >
                                                     お店に入る ➔
                                                 </button>
