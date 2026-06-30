@@ -56,6 +56,7 @@ export function MapContainer({
     const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
     const [isMobile, setIsMobile] = useState(false);
     const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
+    const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -81,6 +82,11 @@ export function MapContainer({
     };
 
     const handleMarkerHover = useCallback((store: Store) => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+
         // もし既にこの店舗のポップアップが開いていれば再生成しない（動画が切り替わらないように）
         if (activePopup?.storeId === store.id) return;
 
@@ -438,6 +444,9 @@ export function MapContainer({
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
             }
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -563,8 +572,20 @@ export function MapContainer({
                             zIndex={100}
                         >
                             <div
-                                onMouseEnter={() => !isMobile && handleMarkerHover(store)}
-                                onMouseLeave={() => !isMobile && updateActivePopup(null)}
+                                onMouseEnter={() => {
+                                    if (isMobile) return;
+                                    if (closeTimeoutRef.current) {
+                                        clearTimeout(closeTimeoutRef.current);
+                                        closeTimeoutRef.current = null;
+                                    }
+                                    handleMarkerHover(store);
+                                }}
+                                onMouseLeave={() => {
+                                    if (isMobile) return;
+                                    closeTimeoutRef.current = setTimeout(() => {
+                                        updateActivePopup(null);
+                                    }, 300); // 300ms delay to allow moving mouse to the popup
+                                }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (isMobile) {
@@ -627,6 +648,12 @@ export function MapContainer({
                                             transition={{ duration: 0.2 }}
                                             className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
                                             onClick={(e) => e.stopPropagation()}
+                                            onMouseEnter={() => {
+                                                if (closeTimeoutRef.current) {
+                                                    clearTimeout(closeTimeoutRef.current);
+                                                    closeTimeoutRef.current = null;
+                                                }
+                                            }}
                                         >
                                             {/* ポップアップを閉じる「×」ボタン */}
                                             <button
