@@ -95,14 +95,21 @@ export function MapContainer({
         let imageUrl = null;
 
         const validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id) as string[] || [];
-        if (validVideos.length > 0) {
-            // ランダムに1つだけ取得
-            const randIdx = Math.floor(Math.random() * validVideos.length);
-            videoId = validVideos[randIdx];
-        } else if (store.images && store.images.length > 0) {
-            // ランダムに画像を選択
-            const randIdx = Math.floor(Math.random() * store.images.length);
-            imageUrl = store.images[randIdx];
+        const validImages = store.images || [];
+
+        // すべての動画と画像をプールして、その中から完全にランダムで選ぶ
+        const mediaPool: { type: "video" | "image"; value: string }[] = [];
+        validVideos.forEach(vId => mediaPool.push({ type: "video", value: vId }));
+        validImages.forEach(img => mediaPool.push({ type: "image", value: img }));
+
+        if (mediaPool.length > 0) {
+            const randIdx = Math.floor(Math.random() * mediaPool.length);
+            const selected = mediaPool[randIdx];
+            if (selected.type === "video") {
+                videoId = selected.value;
+            } else {
+                imageUrl = selected.value;
+            }
         }
 
         updateActivePopup({ storeId: store.id, videoId, imageUrl });
