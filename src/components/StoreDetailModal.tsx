@@ -208,6 +208,17 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                             </div>
                         )}
 
+                        {store.descriptionCH && (
+                            <div className="space-y-3 p-5 bg-[#FDF8F5] rounded-3xl border-2 border-[#FFE8DF]/40 shadow-[0_4px_15px_rgba(251,146,60,0.02)]">
+                                <h3 className="text-[10px] font-black text-orange-500 uppercase tracking-widest px-1 flex items-center gap-1.5">
+                                    <span>✨</span> バイヤーセレクトストーリー
+                                </h3>
+                                <p className="text-[#5D4037]/90 leading-relaxed text-sm font-medium whitespace-pre-wrap">
+                                    {store.descriptionCH}
+                                </p>
+                            </div>
+                        )}
+
                         {(store.website || store.instagram || store.buyUrl) && (
                             <div className="flex flex-wrap gap-2 pt-2">
                                 {store.buyUrl && (
