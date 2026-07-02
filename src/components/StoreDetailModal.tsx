@@ -3,7 +3,7 @@
 import { Store, UserStats } from "@/types";
 import { X, Heart, CheckCircle, MapPin, Youtube, ExternalLink, ChevronLeft, ChevronRight, Image as ImageIcon, Globe, Instagram, ShoppingBag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
 
 interface StoreDetailModalProps {
@@ -16,7 +16,15 @@ interface StoreDetailModalProps {
 
 export function StoreDetailModal({ store, onClose, userStats, onToggleStat, userLocation }: StoreDetailModalProps) {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
+    const [activeTab, setActiveTab] = useState<"intro" | "story">("intro");
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    // Reset tab state when store changes to prevent state leakage
+    useEffect(() => {
+        if (store) {
+            setActiveTab(store.descriptionJP ? "intro" : "story");
+        }
+    }, [store]);
 
     if (!store) return null;
 
@@ -199,23 +207,53 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                             </motion.button>
                         </div>
 
-                        {store.descriptionJP && (
-                            <div className="space-y-3">
-                                <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">{t.description}</h3>
-                                <p className="text-sweet-brown/80 leading-relaxed text-sm font-medium whitespace-pre-wrap">
-                                    {store.descriptionJP}
-                                </p>
-                            </div>
-                        )}
+                        {/* Tab Content Container (Paper/Book Texture) */}
+                        {(store.descriptionJP || store.descriptionCH) && (
+                            <div className="space-y-5 p-6 md:p-8 bg-[#FAF6EE] rounded-[2rem] border-2 border-[#E5DCCB] border-l-8 border-l-[#7A5C51] shadow-[inset_0_0_20px_rgba(93,64,55,0.03),_0_10px_25px_rgba(93,64,55,0.05)]">
+                                
+                                {/* Tabs Header (Only shown if both descriptions exist) */}
+                                {store.descriptionJP && store.descriptionCH ? (
+                                    <div className="flex border-b border-[#E5DCCB]/60 pb-2 gap-6">
+                                        <button
+                                            onClick={() => setActiveTab("intro")}
+                                            className={`pb-2 text-xs md:text-sm font-black transition-all border-b-2 cursor-pointer ${
+                                                activeTab === "intro" 
+                                                    ? "border-[#7A5C51] text-[#7A5C51] scale-105" 
+                                                    : "border-transparent text-gray-400 hover:text-[#7A5C51]/80"
+                                            }`}
+                                        >
+                                            📖 店舗紹介
+                                        </button>
+                                        <button
+                                            onClick={() => setActiveTab("story")}
+                                            className={`pb-2 text-xs md:text-sm font-black transition-all border-b-2 cursor-pointer ${
+                                                activeTab === "story" 
+                                                    ? "border-[#7A5C51] text-[#7A5C51] scale-105" 
+                                                    : "border-transparent text-gray-400 hover:text-[#7A5C51]/80"
+                                            }`}
+                                        >
+                                            ✨ バイヤーストーリー
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
+                                        {activeTab === "intro" ? t.description : "バイヤーセレクトストーリー"}
+                                    </h3>
+                                )}
 
-                        {store.descriptionCH && (
-                            <div className="space-y-4 p-6 md:p-8 bg-[#FAF6EE] rounded-[2rem] border-2 border-[#E5DCCB] border-l-8 border-l-[#7A5C51] shadow-[inset_0_0_20px_rgba(93,64,55,0.03),_0_10px_25px_rgba(93,64,55,0.05)]">
-                                <h3 className="text-lg md:text-xl font-serif font-black text-[#5D4037] tracking-tight px-1 flex items-center gap-2">
-                                    <span>📖</span> バイヤーセレクトストーリー
-                                </h3>
-                                <p className="text-[#4E342E] leading-relaxed text-sm md:text-base font-serif whitespace-pre-wrap">
-                                    {store.descriptionCH}
-                                </p>
+                                {/* Tab Body Content (Unified UI Font) */}
+                                <div className="min-h-[80px]">
+                                    {activeTab === "intro" && store.descriptionJP && (
+                                        <p className="text-[#4E342E] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
+                                            {store.descriptionJP}
+                                        </p>
+                                    )}
+                                    {activeTab === "story" && store.descriptionCH && (
+                                        <p className="text-[#4E342E] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
+                                            {store.descriptionCH}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         )}
 
