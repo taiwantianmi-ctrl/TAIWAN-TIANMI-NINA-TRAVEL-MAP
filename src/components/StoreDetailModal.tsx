@@ -231,7 +231,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                                     : "bg-[#E3D4C1] border-[#CEBDA6] text-gray-500 hover:text-gray-700 translate-y-0.5 hover:bg-[#E3D4C1]/90"
                                             }`}
                                         >
-                                            バイヤーストーリー
+                                            アレックスのおすすめポイント
                                         </button>
                                     </div>
                                 ) : null}
@@ -241,7 +241,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                     {/* Small title header if only one description exists */}
                                     {!(store.descriptionJP && store.descriptionCH) && (
                                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">
-                                            {activeTab === "intro" ? t.description : "バイヤーセレクトストーリー"}
+                                            {activeTab === "intro" ? t.description : "アレックスのおすすめポイント"}
                                         </h3>
                                     )}
 

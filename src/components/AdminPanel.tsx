@@ -381,8 +381,8 @@ export function AdminPanel({
                                                         <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed" placeholder="日本語で紹介を入力..." value={editingStore.descriptionJP || ""} onChange={e => setEditingStore({ ...editingStore, descriptionJP: e.target.value })} />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">バイヤーセレクトストーリー</p>
-                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed text-sweet-brown/80" placeholder="お店にまつわる特別なストーリーや追加情報を入力..." value={editingStore.descriptionCH || ""} onChange={e => setEditingStore({ ...editingStore, descriptionCH: e.target.value })} />
+                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">アレックスのおすすめポイント</p>
+                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed text-sweet-brown/80" placeholder="アレックスがおすすめするポイントや詳細情報を入力..." value={editingStore.descriptionCH || ""} onChange={e => setEditingStore({ ...editingStore, descriptionCH: e.target.value })} />
                                                     </div>
                                                 </div>
                                             </div>
