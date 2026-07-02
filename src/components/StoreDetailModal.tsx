@@ -217,8 +217,8 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                             onClick={() => setActiveTab("intro")}
                                             className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "intro" 
-                                                    ? "bg-[#FAF3E8] border-[#F3E1CC] text-[#7A5C51] translate-y-0 shadow-sm" 
-                                                    : "bg-[#EFE8DC]/60 border-[#DED4C3] text-gray-400 hover:text-gray-600 translate-y-0.5"
+                                                    ? "bg-[#FDF8F2] border-[#EADAC2] text-[#7A5C51] translate-y-0 shadow-sm" 
+                                                    : "bg-[#E3D4C1] border-[#CEBDA6] text-gray-500 hover:text-gray-700 translate-y-0.5 hover:bg-[#E3D4C1]/90"
                                             }`}
                                         >
                                             店舗紹介
@@ -227,8 +227,8 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                             onClick={() => setActiveTab("story")}
                                             className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "story" 
-                                                    ? "bg-[#FAF3E8] border-[#F3E1CC] text-[#7A5C51] translate-y-0 shadow-sm" 
-                                                    : "bg-[#EFE8DC]/60 border-[#DED4C3] text-gray-400 hover:text-gray-600 translate-y-0.5"
+                                                    ? "bg-[#FDF8F2] border-[#EADAC2] text-[#7A5C51] translate-y-0 shadow-sm" 
+                                                    : "bg-[#E3D4C1] border-[#CEBDA6] text-gray-500 hover:text-gray-700 translate-y-0.5 hover:bg-[#E3D4C1]/90"
                                             }`}
                                         >
                                             バイヤーストーリー
@@ -237,7 +237,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                 ) : null}
 
                                 {/* Tab Body Container (Watercolor style) */}
-                                <div className={`p-6 md:p-8 bg-gradient-to-tr from-[#FFF9F6] via-[#FAF3E8] to-[#FFF6F9] rounded-[2rem] border-2 border-[#F3E1CC] border-l-8 border-l-[#E2A69A]/80 shadow-[0_15px_35px_rgba(218,185,150,0.12),_inset_0_0_24px_rgba(255,255,255,0.6)] ${store.descriptionJP && store.descriptionCH ? "rounded-tl-none" : ""}`}>
+                                <div className={`p-6 md:p-8 bg-[#FDF8F2] rounded-[2rem] border-2 border-[#EADAC2] border-l-8 border-l-[#E2A69A]/80 shadow-[0_15px_35px_rgba(218,185,150,0.12),_inset_0_0_24px_rgba(255,255,255,0.4)] ${store.descriptionJP && store.descriptionCH ? "rounded-tl-none" : ""}`}>
                                     {/* Small title header if only one description exists */}
                                     {!(store.descriptionJP && store.descriptionCH) && (
                                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">
