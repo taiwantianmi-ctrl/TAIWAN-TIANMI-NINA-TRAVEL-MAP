@@ -574,9 +574,18 @@ export function MapContainer({
                     const isVis = userStats.visited.includes(store.id);
                     const isActive = activePopup?.storeId === store.id;
 
-                    // Determine if the store is in the upper half of the current map view
+                    // Determine if the store is in the upper half or right half of the current map view
                     const center = map?.getCenter();
                     const isUpperHalf = center ? (store.lat > center.lat()) : false;
+                    const isRightHalf = center ? (store.lng > center.lng()) : false;
+
+                    const popupClassName = isMobile
+                        ? `absolute ${isUpperHalf ? "top-[calc(100%+8px)]" : "bottom-[calc(100%+8px)]"} left-1/2 -translate-x-1/2 w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`
+                        : `absolute top-1/2 -translate-y-1/2 ${isRightHalf ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]"} w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`;
+
+                    const popupInitialExit = isMobile
+                        ? { opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }
+                        : { opacity: 0, x: isRightHalf ? 10 : -10, scale: 0.9 };
 
                     return (
                         <AdvancedMarker
@@ -657,15 +666,11 @@ export function MapContainer({
                                 <AnimatePresence>
                                     {isActive && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }}
+                                            initial={popupInitialExit}
+                                            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+                                            exit={popupInitialExit}
                                             transition={{ duration: 0.2 }}
-                                            className={`absolute ${
-                                                isUpperHalf 
-                                                    ? "top-[calc(100%+8px)]" 
-                                                    : "bottom-[calc(100%+8px)]"
-                                            } left-1/2 -translate-x-1/2 w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`}
+                                            className={popupClassName}
                                             onClick={(e) => e.stopPropagation()}
                                             onMouseEnter={() => {
                                                 if (closeTimeoutRef.current) {
