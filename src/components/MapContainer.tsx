@@ -683,18 +683,14 @@ export function MapContainer({
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
-                                                <div className="relative aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner flex items-center justify-center">
-                                                    <img 
-                                                        src={`https://img.youtube.com/vi/${activePopup.videoId}/mqdefault.jpg`} 
-                                                        className="w-full h-full object-cover"
-                                                        alt="Video thumbnail"
+                                                <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner">
+                                                    <iframe 
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=small`}
+                                                        className="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50 pointer-events-none z-10 border-0"
+                                                        allow="autoplay"
                                                     />
-                                                    {/* 中央にYouTube風のプレイボタンをオーバーレイ */}
-                                                    <div className="absolute inset-0 bg-black/10 flex items-center justify-center pointer-events-none">
-                                                        <div className="w-9 h-6 bg-red-600 rounded-md flex items-center justify-center shadow-md">
-                                                            <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-white border-b-[5px] border-b-transparent ml-0.5" />
-                                                        </div>
-                                                    </div>
+                                                    {/* 透明なオーバーレイでクリック防止および地図操作の邪魔をしないようにする */}
+                                                    <div className="absolute inset-0 z-20 pointer-events-auto cursor-default" />
                                                 </div>
                                             ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
