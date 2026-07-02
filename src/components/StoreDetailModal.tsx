@@ -207,52 +207,56 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                             </motion.button>
                         </div>
 
-                        {/* Tab Content Container (Paper/Book Texture) */}
+                        {/* Tab Content Container (Watercolor Notebook Style) */}
                         {(store.descriptionJP || store.descriptionCH) && (
-                            <div className="space-y-5 p-6 md:p-8 bg-[#FAF6EE] rounded-[2rem] border-2 border-[#E5DCCB] border-l-8 border-l-[#7A5C51] shadow-[inset_0_0_20px_rgba(93,64,55,0.03),_0_10px_25px_rgba(93,64,55,0.05)]">
-                                
-                                {/* Tabs Header (Only shown if both descriptions exist) */}
+                            <div className="relative mt-2">
+                                {/* Tabs Header (Index Tags protruding from the top) - Only if both exist */}
                                 {store.descriptionJP && store.descriptionCH ? (
-                                    <div className="flex border-b border-[#E5DCCB]/60 pb-2 gap-6">
+                                    <div className="flex gap-1.5 pl-6 -mb-[2px] relative z-10">
                                         <button
                                             onClick={() => setActiveTab("intro")}
-                                            className={`pb-2 text-xs md:text-sm font-black transition-all border-b-2 cursor-pointer ${
+                                            className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "intro" 
-                                                    ? "border-[#7A5C51] text-[#7A5C51] scale-105" 
-                                                    : "border-transparent text-gray-400 hover:text-[#7A5C51]/80"
+                                                    ? "bg-[#FAF3E8] border-[#F3E1CC] text-[#7A5C51] translate-y-0 shadow-sm" 
+                                                    : "bg-[#EFE8DC]/60 border-[#DED4C3] text-gray-400 hover:text-gray-600 translate-y-0.5"
                                             }`}
                                         >
-                                            📖 店舗紹介
+                                            店舗紹介
                                         </button>
                                         <button
                                             onClick={() => setActiveTab("story")}
-                                            className={`pb-2 text-xs md:text-sm font-black transition-all border-b-2 cursor-pointer ${
+                                            className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "story" 
-                                                    ? "border-[#7A5C51] text-[#7A5C51] scale-105" 
-                                                    : "border-transparent text-gray-400 hover:text-[#7A5C51]/80"
+                                                    ? "bg-[#FAF3E8] border-[#F3E1CC] text-[#7A5C51] translate-y-0 shadow-sm" 
+                                                    : "bg-[#EFE8DC]/60 border-[#DED4C3] text-gray-400 hover:text-gray-600 translate-y-0.5"
                                             }`}
                                         >
-                                            ✨ バイヤーストーリー
+                                            バイヤーストーリー
                                         </button>
                                     </div>
-                                ) : (
-                                    <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
-                                        {activeTab === "intro" ? t.description : "バイヤーセレクトストーリー"}
-                                    </h3>
-                                )}
+                                ) : null}
 
-                                {/* Tab Body Content (Unified UI Font) */}
-                                <div className="min-h-[80px]">
-                                    {activeTab === "intro" && store.descriptionJP && (
-                                        <p className="text-[#4E342E] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
-                                            {store.descriptionJP}
-                                        </p>
+                                {/* Tab Body Container (Watercolor style) */}
+                                <div className={`p-6 md:p-8 bg-gradient-to-tr from-[#FFF9F6] via-[#FAF3E8] to-[#FFF6F9] rounded-[2rem] border-2 border-[#F3E1CC] border-l-8 border-l-[#E2A69A]/80 shadow-[0_15px_35px_rgba(218,185,150,0.12),_inset_0_0_24px_rgba(255,255,255,0.6)] ${store.descriptionJP && store.descriptionCH ? "rounded-tl-none" : ""}`}>
+                                    {/* Small title header if only one description exists */}
+                                    {!(store.descriptionJP && store.descriptionCH) && (
+                                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">
+                                            {activeTab === "intro" ? t.description : "バイヤーセレクトストーリー"}
+                                        </h3>
                                     )}
-                                    {activeTab === "story" && store.descriptionCH && (
-                                        <p className="text-[#4E342E] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
-                                            {store.descriptionCH}
-                                        </p>
-                                    )}
+
+                                    <div className="min-h-[80px]">
+                                        {activeTab === "intro" && store.descriptionJP && (
+                                            <p className="text-[#5D4037] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
+                                                {store.descriptionJP}
+                                            </p>
+                                        )}
+                                        {activeTab === "story" && store.descriptionCH && (
+                                            <p className="text-[#5D4037] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
+                                                {store.descriptionCH}
+                                            </p>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         )}
