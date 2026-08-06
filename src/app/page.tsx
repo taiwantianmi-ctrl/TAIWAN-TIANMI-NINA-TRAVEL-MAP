@@ -34,8 +34,6 @@ export default function Home() {
   const [isPopupActive, setIsPopupActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showRoute, setShowRoute] = useState(false);
-  const [routeType, setRouteType] = useState<"favorites" | "visited">("favorites"); // マイ・ルートの対象リスト
 
 
   // Monitor resize for mobile detection
@@ -161,7 +159,6 @@ export default function Home() {
     setEditingStore(null);
     setShowGenreFilter(false);
     setSearchQuery("");
-    setShowRoute(false);
   };
 
   let filteredStores = stores;
@@ -476,38 +473,9 @@ export default function Home() {
             </div>
           )}
 
-          {/* Right: Mobile Route Toggle Button (右上端に個別表示) */}
-          {isMobile && (
-            <button
-              onClick={() => {
-                setShowRoute(!showRoute);
-                setRouteType(activeTab);
-              }}
-              className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-all shrink-0 cursor-pointer shadow-sm ${
-                showRoute 
-                  ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' 
-                  : 'bg-white text-orange-500 border-orange-100'
-              }`}
-            >
-              <span>マイルート {showRoute ? 'ON' : 'OFF'}</span>
-            </button>
-          )}
-
           {/* Right: Statistics & Share (Desktop Only) */}
           {!isMobile && (
             <div className="flex flex-row items-center gap-4 shrink-0">
-              {/* Route Draw Button (PC) */}
-              <button
-                onClick={() => setShowRoute(!showRoute)}
-                className={`px-4 py-2.5 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer border ${
-                  showRoute 
-                    ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100' 
-                    : 'bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50 shadow-sm'
-                }`}
-              >
-                <Move size={14} />
-                <span>マイルート ({showRoute ? 'ON' : 'OFF'})</span>
-              </button>
               {/* Share Button */}
               <button
                 onClick={handleShareList}
@@ -702,27 +670,6 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Route selector when Route is active */}
-            {showRoute && (
-              <div className="px-4 py-2 bg-orange-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
-                <span className="text-[9px] font-black text-orange-600">ルート対象:</span>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => setRouteType("favorites")}
-                    className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${routeType === "favorites" ? "bg-pink-400 text-white border-pink-400" : "bg-white text-pink-400 border-pink-100"}`}
-                  >
-                    お気に入り ({userStats.favorites.length})
-                  </button>
-                  <button
-                    onClick={() => setRouteType("visited")}
-                    className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${routeType === "visited" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-orange-500 border-orange-100"}`}
-                  >
-                    行ってみたい ({userStats.visited.length})
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Sidebar Scrollable List */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2.5 pb-20 scrollbar-none">
               {finalStoresList.length === 0 ? (
@@ -859,9 +806,6 @@ export default function Home() {
                 setShowGenreFilter(false);
               }
             }}
-            showRoute={showRoute}
-            routeType={routeType}
-            allStores={stores}
           />
         </div>
       </div>
@@ -891,19 +835,13 @@ export default function Home() {
             <div className="px-5 pb-3.5 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    setActiveTab("favorites");
-                    setRouteType("favorites");
-                  }}
+                  onClick={() => setActiveTab("favorites")}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "favorites" ? 'bg-pink-400 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
                   お気に入り ({userStats.favorites.length})
                 </button>
                 <button
-                  onClick={() => {
-                    setActiveTab("visited");
-                    setRouteType("visited");
-                  }}
+                  onClick={() => setActiveTab("visited")}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "visited" ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
                   行ってみたい ({userStats.visited.length})
