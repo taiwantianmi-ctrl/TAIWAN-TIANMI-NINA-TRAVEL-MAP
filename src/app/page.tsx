@@ -476,9 +476,38 @@ export default function Home() {
             </div>
           )}
 
+          {/* Right: Mobile Route Toggle Button (右上端に個別表示) */}
+          {isMobile && (
+            <button
+              onClick={() => {
+                setShowRoute(!showRoute);
+                setRouteType(activeTab);
+              }}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-black border transition-all shrink-0 cursor-pointer shadow-sm ${
+                showRoute 
+                  ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' 
+                  : 'bg-white text-orange-500 border-orange-100'
+              }`}
+            >
+              <span>マイルート {showRoute ? 'ON' : 'OFF'}</span>
+            </button>
+          )}
+
           {/* Right: Statistics & Share (Desktop Only) */}
           {!isMobile && (
             <div className="flex flex-row items-center gap-4 shrink-0">
+              {/* Route Draw Button (PC) */}
+              <button
+                onClick={() => setShowRoute(!showRoute)}
+                className={`px-4 py-2.5 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer border ${
+                  showRoute 
+                    ? 'bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100' 
+                    : 'bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50 shadow-sm'
+                }`}
+              >
+                <Move size={14} />
+                <span>マイルート ({showRoute ? 'ON' : 'OFF'})</span>
+              </button>
               {/* Share Button */}
               <button
                 onClick={handleShareList}
@@ -635,17 +664,6 @@ export default function Home() {
               <Share2 size={12} />
               <span>共有</span>
             </button>
-
-            <button
-              onClick={() => {
-                setShowRoute(!showRoute);
-                setRouteType(activeTab);
-              }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showRoute ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
-            >
-              <Move size={12} />
-              <span>マイルート ({showRoute ? 'ON' : 'OFF'})</span>
-            </button>
           </div>
         )}
       </div>
@@ -670,7 +688,7 @@ export default function Home() {
                 </span>
               </div>
               
-              {/* Distance sorting / Route Switch */}
+              {/* Distance sorting */}
               <div className="flex items-center gap-2">
                 {userLocation && (
                   <button
@@ -681,14 +699,6 @@ export default function Home() {
                     <span>近い順</span>
                   </button>
                 )}
-                
-                {/* Route Draw Toggle Button */}
-                <button
-                  onClick={() => setShowRoute(!showRoute)}
-                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black border transition-colors cursor-pointer ${showRoute ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-100 text-gray-500'}`}
-                >
-                  <span>ルート描画</span>
-                </button>
               </div>
             </div>
 
@@ -851,6 +861,7 @@ export default function Home() {
             }}
             showRoute={showRoute}
             routeType={routeType}
+            allStores={stores}
           />
         </div>
       </div>

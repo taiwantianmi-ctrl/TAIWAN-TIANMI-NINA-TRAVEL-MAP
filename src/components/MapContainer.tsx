@@ -24,6 +24,7 @@ interface MapContainerProps {
     selectedAreaId?: string;
     showRoute?: boolean;
     routeType?: "favorites" | "visited";
+    allStores?: Store[];
 }
 
 export function MapContainer({ 
@@ -40,15 +41,14 @@ export function MapContainer({
     onPopupActiveChange,
     selectedAreaId,
     showRoute = false,
-    routeType = "favorites"
+    routeType = "favorites",
+    allStores = []
 }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);
-    const [userSearchQuery, setUserSearchQuery] = useState("");
     const [tempPin, setTempPin] = useState<{ lat: number; lng: number } | null>(null);
     const [showTools, setShowTools] = useState(false);
-    const [showSearchResults, setShowSearchResults] = useState(false);
     const toolsTimerRef = useRef<NodeJS.Timeout | null>(null);
     const clusterer = useRef<MarkerClusterer | null>(null);
     const markerElements = useRef<Record<string, google.maps.marker.AdvancedMarkerElement>>({});
@@ -383,32 +383,7 @@ export function MapContainer({
         });
     }, [placesLib, map, isAdminMode, onLocationSelect]);
 
-    const filteredStoreResults = useMemo(() => {
-        if (!userSearchQuery) return [];
-        const query = userSearchQuery.toLowerCase();
-        return stores.filter(s => {
-            const nameJP = s.nameJP?.toLowerCase() || "";
-            const nameCH = s.nameCH?.toLowerCase() || "";
-            const addressJP = s.addressJP?.toLowerCase() || "";
-            const addressCH = s.addressCH?.toLowerCase() || "";
-            const descJP = s.descriptionJP?.toLowerCase() || "";
-            const descCH = s.descriptionCH?.toLowerCase() || "";
-            
-            // Search genres
-            const genreNames = s.genres.map(gId => {
-                const g = genres.find(genre => genre.id === gId);
-                return g ? `${g.nameJP} ${g.nameCH}`.toLowerCase() : "";
-            }).join(" ");
 
-            return nameJP.includes(query) || 
-                   nameCH.includes(query) || 
-                   addressJP.includes(query) || 
-                   addressCH.includes(query) ||
-                   descJP.includes(query) ||
-                   descCH.includes(query) ||
-                   genreNames.includes(query);
-        }).slice(0, 5);
-    }, [userSearchQuery, stores, genres]);
 
     const toggleTracking = () => {
         if (!navigator.geolocation) {
@@ -463,13 +438,15 @@ export function MapContainer({
         }
 
         if (!showRoute) return;
+        if (typeof window === "undefined" || !window.google || !window.google.maps) return;
 
         const listIds = routeType === "favorites" ? userStats.favorites : userStats.visited;
         if (listIds.length < 2) return;
 
-        // Sort coordinates by the order in listIds so it represents a travel route
+        // Ensure we search in allStores to get coordinates even if some stores are currently filtered out
+        const searchSource = allStores.length > 0 ? allStores : stores;
         const pathCoords = listIds
-            .map(id => stores.find(s => s.id === id))
+            .map(id => searchSource.find(s => s.id === id))
             .filter((s): s is Store => !!s)
             .map(s => ({ lat: s.lat, lng: s.lng }));
 
@@ -504,7 +481,7 @@ export function MapContainer({
                 polyline.setMap(null);
             }
         };
-    }, [map, showRoute, routeType, userStats, stores]);
+    }, [map, showRoute, routeType, userStats, stores, allStores]);
 
     // Cleanup on unmount
     useEffect(() => {
@@ -538,66 +515,6 @@ export function MapContainer({
 
     return (
         <div className="w-full h-full relative bg-white overflow-hidden rounded-[2.5rem]">
-            {/* User Search Bar - Moved to top-left and slimmed down */}
-            {!isAdminMode && (
-                <div className="absolute top-4 left-4 z-[50] w-[calc(100%-2rem)] max-w-[280px] pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-white/50 flex flex-col pointer-events-auto transition-all">
-                        <div className="flex items-center gap-2 px-2">
-                            <Search className="text-pink-400 shrink-0" size={16} />
-                            <input
-                                value={userSearchQuery}
-                                onChange={(e) => {
-                                    setUserSearchQuery(e.target.value);
-                                    setShowSearchResults(true);
-                                }}
-                                onFocus={() => setShowSearchResults(true)}
-                                className="w-full py-2 h-9 bg-transparent border-none outline-none text-xs font-bold text-sweet-brown placeholder-gray-400"
-                                placeholder="お店の名前で検索..."
-                            />
-                            {userSearchQuery && (
-                                <button onClick={() => { setUserSearchQuery(""); setShowSearchResults(false); }} className="p-1 text-gray-400 hover:text-pink-500 transition-colors">
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
-
-                        <AnimatePresence>
-                            {showSearchResults && filteredStoreResults.length > 0 && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden border-t border-gray-100/50"
-                                >
-                                    <div className="py-2">
-                                        {filteredStoreResults.map(s => (
-                                            <button
-                                                key={s.id}
-                                                onClick={() => {
-                                                    map?.panTo({ lat: s.lat, lng: s.lng });
-                                                    map?.setZoom(17);
-                                                    onStoreSelect(s);
-                                                    setShowSearchResults(false);
-                                                }}
-                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-pink-50 transition-colors text-left"
-                                            >
-                                                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-sm border border-pink-50">
-                                                    {getGenreInfo(s).icon}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-black text-sweet-brown">{s.nameJP}</div>
-                                                    <div className="text-[10px] text-gray-400 font-bold">{s.nameCH}</div>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            )}
-
             {/* Admin Search */}
             {isAdminMode && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] w-[calc(100%-2rem)] max-w-md pointer-events-none">
@@ -621,7 +538,6 @@ export function MapContainer({
                 gestureHandling={"greedy"}
                 className="w-full h-full"
                 onClick={(e) => {
-                    setShowSearchResults(false);
                     updateActivePopup(null);
                     if (isAdminMode && e.detail.latLng && onLocationSelect) {
                         const { lat, lng } = e.detail.latLng;
