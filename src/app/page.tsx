@@ -32,6 +32,11 @@ export default function Home() {
   const [sortByDistance, setSortByDistance] = useState(false);
   const [activeTab, setActiveTab] = useState<"favorites" | "visited">("favorites");
   const [isPopupActive, setIsPopupActive] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [showRoute, setShowRoute] = useState(false);
+  const [routeType, setRouteType] = useState<"favorites" | "visited">("favorites"); // マイ・ルートの対象リスト
+
 
   // Monitor resize for mobile detection
   useEffect(() => {
@@ -155,6 +160,8 @@ export default function Home() {
     setShowAdmin(false);
     setEditingStore(null);
     setShowGenreFilter(false);
+    setSearchQuery("");
+    setShowRoute(false);
   };
 
   let filteredStores = stores;
@@ -167,6 +174,18 @@ export default function Home() {
   if (showOnlyVisited) {
     filteredStores = filteredStores.filter(store => userStats.visited.includes(store.id));
   }
+  if (searchQuery.trim() !== "") {
+    const q = searchQuery.toLowerCase().trim();
+    filteredStores = filteredStores.filter(store => 
+      store.nameJP?.toLowerCase().includes(q) ||
+      store.nameCH?.toLowerCase().includes(q) ||
+      store.descriptionJP?.toLowerCase().includes(q) ||
+      store.descriptionCH?.toLowerCase().includes(q) ||
+      store.addressJP?.toLowerCase().includes(q) ||
+      store.addressCH?.toLowerCase().includes(q)
+    );
+  }
+
 
   // Distance sorting if GPS location is active
   const sortedStoresByDistance = useMemo(() => {
@@ -415,7 +434,7 @@ export default function Home() {
         <div className="w-full flex items-center justify-between gap-4">
           {/* Left: Title & Logo */}
           <div 
-            className="flex items-center gap-2 md:gap-4 pointer-events-auto cursor-pointer min-w-0"
+            className="flex items-center gap-2 md:gap-4 pointer-events-auto cursor-pointer min-w-0 shrink-0"
             onClick={resetApp}
           >
             <div className={`bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden shrink-0 flex items-center justify-center ${isMobile ? 'w-10 h-10' : 'w-24 h-24 md:w-28 md:h-28'}`}>
@@ -430,6 +449,32 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          {/* Middle: Search Bar (Desktop Only) */}
+          {!isMobile && (
+            <div className="flex-1 max-w-md mx-6 relative">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="店名、お菓子、説明、住所から検索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-full border border-pink-100 bg-[#FFFDFD] focus:bg-white text-xs font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
+                />
+                <div className="absolute left-3.5 text-pink-300 pointer-events-none">
+                  <Search size={16} />
+                </div>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3.5 text-pink-300 hover:text-pink-500 cursor-pointer"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Right: Statistics & Share (Desktop Only) */}
           {!isMobile && (
@@ -465,6 +510,30 @@ export default function Home() {
           <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 pointer-events-auto">
             <AreaFilterUI isPC={true} />
             <GenreFilterUI isPC={true} />
+          </div>
+        )}
+
+        {/* Mobile Search Bar */}
+        {isMobile && (
+          <div className="mt-2 relative">
+            <input
+              type="text"
+              placeholder="店名、お菓子、説明、住所から検索..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-pink-100 bg-[#FFFDFD] text-[11px] font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-1 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300 pointer-events-none">
+              <Search size={14} />
+            </div>
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-pink-300 hover:text-pink-500 cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         )}
 
@@ -570,47 +639,209 @@ export default function Home() {
         )}
       </div>
 
-      {/* Map Container */}
-      <div className="flex-1 p-2 bg-gray-50 overflow-hidden relative">
-        <MapContainer
-          stores={finalStoresList}
-          genres={genres}
-          selectedAreaId={selectedAreaId}
-          onStoreSelect={(store) => {
-            if (showAdmin) {
-              setEditingStore(store);
-              setFormStep(2);
-            } else {
-              setSelectedStore(store);
-            }
-          }}
-          userStats={userStats}
-          isAdminMode={showAdmin}
-          onLocationSelect={(loc) => {
-            if (showAdmin) {
-              const newStore = {
-                ...(editingStore || { images: [], videos: [], genres: [] }),
-                lat: loc.lat,
-                lng: loc.lng,
-                nameJP: loc.name || editingStore?.nameJP || "",
-                addressJP: loc.address || editingStore?.addressJP || "",
-              };
-              setEditingStore(newStore);
-              if (loc.photos) setGooglePhotos(loc.photos);
-              setFormStep(1);
-            }
-          }}
-          onToggleStat={toggleStat}
-          onUserLocationChange={setUserLocation}
-          focusedStore={focusedStore}
-          onPopupActiveChange={(active) => {
-            setIsPopupActive(active);
-            if (active) {
-              setBottomSheetState("collapsed");
-              setShowGenreFilter(false);
-            }
-          }}
-        />
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-row overflow-hidden relative bg-gray-50">
+        {/* PC Sidebar */}
+        {!isMobile && showSidebar && (
+          <motion.div
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 380, opacity: 1 }}
+            exit={{ width: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="h-full border-r border-gray-100 bg-white flex flex-col z-20 shadow-lg shrink-0 relative"
+          >
+            {/* Sidebar Header */}
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black text-sweet-brown">店舗リスト</span>
+                <span className="bg-pink-50 text-pink-500 px-2 py-0.5 rounded-full text-[9px] font-black">
+                  {finalStoresList.length} 件
+                </span>
+              </div>
+              
+              {/* Distance sorting / Route Switch */}
+              <div className="flex items-center gap-2">
+                {userLocation && (
+                  <button
+                    onClick={() => setSortByDistance(!sortByDistance)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black border transition-colors cursor-pointer ${sortByDistance ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-white border-gray-100 text-gray-500'}`}
+                  >
+                    <ArrowUpDown size={10} />
+                    <span>近い順</span>
+                  </button>
+                )}
+                
+                {/* Route Draw Toggle Button */}
+                <button
+                  onClick={() => setShowRoute(!showRoute)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-black border transition-colors cursor-pointer ${showRoute ? 'bg-orange-50 border-orange-200 text-orange-600' : 'bg-white border-gray-100 text-gray-500'}`}
+                >
+                  <span>ルート描画</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Route selector when Route is active */}
+            {showRoute && (
+              <div className="px-4 py-2 bg-orange-50/50 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <span className="text-[9px] font-black text-orange-600">ルート対象:</span>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setRouteType("favorites")}
+                    className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${routeType === "favorites" ? "bg-pink-400 text-white border-pink-400" : "bg-white text-pink-400 border-pink-100"}`}
+                  >
+                    お気に入り ({userStats.favorites.length})
+                  </button>
+                  <button
+                    onClick={() => setRouteType("visited")}
+                    className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${routeType === "visited" ? "bg-orange-500 text-white border-orange-500" : "bg-white text-orange-500 border-orange-100"}`}
+                  >
+                    行ってみたい ({userStats.visited.length})
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Sidebar Scrollable List */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-2.5 pb-20 scrollbar-none">
+              {finalStoresList.length === 0 ? (
+                <div className="h-40 flex flex-col items-center justify-center text-gray-300 gap-2">
+                  <div className="text-3xl">🍬</div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                    店舗が見つかりません
+                  </p>
+                </div>
+              ) : (
+                finalStoresList.map(store => {
+                  const info = getGenreInfo(store);
+                  const isFav = userStats.favorites.includes(store.id);
+                  const isVis = userStats.visited.includes(store.id);
+
+                  return (
+                    <div
+                      key={store.id}
+                      onClick={() => {
+                        setFocusedStore(store);
+                        setSelectedStore(store);
+                      }}
+                      className={`p-3 border rounded-2xl flex items-center gap-3 cursor-pointer transition-all shadow-sm ${selectedStore?.id === store.id ? 'bg-pink-50/70 border-pink-200' : 'bg-gray-50/40 hover:bg-pink-50/30 border-gray-100/50'}`}
+                    >
+                      {/* Image */}
+                      <div className="w-14 h-14 bg-white rounded-xl overflow-hidden shrink-0 shadow-inner flex items-center justify-center">
+                        {store.images && store.images.length > 0 ? (
+                          <img
+                            src={getOptimizedImageUrl(store.images[0], 150)}
+                            alt={store.nameJP}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span className="text-xl">🍡</span>
+                        )}
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span 
+                            style={{ backgroundColor: info.color + '20', color: info.color }}
+                            className="px-1.5 py-0.5 rounded text-[8px] font-black"
+                          >
+                            {info.icon} {genres.find(g => g.id === store.genres[0])?.nameJP}
+                          </span>
+                          {userLocation && (
+                            <span className="text-[8px] font-black text-gray-400">
+                              📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
+                            </span>
+                          )}
+                        </div>
+                        <h4 className="text-xs font-black text-sweet-brown truncate leading-tight mt-1">
+                          {store.nameJP}
+                        </h4>
+                        {store.addressJP && (
+                          <p className="text-[9px] text-gray-400 truncate mt-0.5">
+                            {store.addressJP}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Action Triggers */}
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => toggleStat("favorites", store.id)}
+                          className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${isFav ? 'bg-pink-50 border-pink-100 text-pink-500' : 'bg-white border-gray-100 text-gray-400'}`}
+                        >
+                          <Heart size={12} fill={isFav ? "currentColor" : "none"} />
+                        </button>
+                        <button
+                          onClick={() => toggleStat("visited", store.id)}
+                          className={`p-1.5 rounded-xl border transition-colors cursor-pointer ${isVis ? 'bg-orange-50 border-orange-100 text-orange-500' : 'bg-white border-gray-100 text-gray-400'}`}
+                        >
+                          <span className="text-[8px] font-bold leading-none">✓</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Sidebar Toggle Button (Desktop Only) */}
+        {!isMobile && (
+          <button
+            onClick={() => setShowSidebar(!showSidebar)}
+            className="absolute top-4 z-30 w-10 h-10 bg-white border border-gray-100 rounded-full flex items-center justify-center shadow-md text-sweet-brown hover:text-pink-500 transition-all cursor-pointer"
+            style={{ left: showSidebar ? "396px" : "16px" }}
+          >
+            <Menu size={16} />
+          </button>
+        )}
+
+        {/* Map Container */}
+        <div className="flex-1 p-2 bg-gray-50 overflow-hidden relative">
+          <MapContainer
+            stores={finalStoresList}
+            genres={genres}
+            selectedAreaId={selectedAreaId}
+            onStoreSelect={(store) => {
+              if (showAdmin) {
+                setEditingStore(store);
+                setFormStep(2);
+              } else {
+                setSelectedStore(store);
+              }
+            }}
+            userStats={userStats}
+            isAdminMode={showAdmin}
+            onLocationSelect={(loc) => {
+              if (showAdmin) {
+                const newStore = {
+                  ...(editingStore || { images: [], videos: [], genres: [] }),
+                  lat: loc.lat,
+                  lng: loc.lng,
+                  nameJP: loc.name || editingStore?.nameJP || "",
+                  addressJP: loc.address || editingStore?.addressJP || "",
+                };
+                setEditingStore(newStore);
+                if (loc.photos) setGooglePhotos(loc.photos);
+                setFormStep(1);
+              }
+            }}
+            onToggleStat={toggleStat}
+            onUserLocationChange={setUserLocation}
+            focusedStore={focusedStore}
+            onPopupActiveChange={(active) => {
+              setIsPopupActive(active);
+              if (active) {
+                setBottomSheetState("collapsed");
+                setShowGenreFilter(false);
+              }
+            }}
+            showRoute={showRoute}
+            routeType={routeType}
+          />
+        </div>
       </div>
 
       {/* Mobile Swipeable Bottom Sheet */}

@@ -22,6 +22,8 @@ interface MapContainerProps {
     focusedStore?: Store | null;
     onPopupActiveChange?: (active: boolean) => void;
     selectedAreaId?: string;
+    showRoute?: boolean;
+    routeType?: "favorites" | "visited";
 }
 
 export function MapContainer({ 
@@ -36,7 +38,9 @@ export function MapContainer({
     onUserLocationChange, 
     focusedStore, 
     onPopupActiveChange,
-    selectedAreaId
+    selectedAreaId,
+    showRoute = false,
+    routeType = "favorites"
 }: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
@@ -58,6 +62,7 @@ export function MapContainer({
     const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const prevAreaIdRef = useRef<string | null>(null);
+    const routePolylineRef = useRef<google.maps.Polyline | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -447,6 +452,60 @@ export function MapContainer({
         }
     };
 
+    // Route Polyline Draw Effect
+    useEffect(() => {
+        if (!map) return;
+
+        // Cleanup existing polyline
+        if (routePolylineRef.current) {
+            routePolylineRef.current.setMap(null);
+            routePolylineRef.current = null;
+        }
+
+        if (!showRoute) return;
+
+        const listIds = routeType === "favorites" ? userStats.favorites : userStats.visited;
+        if (listIds.length < 2) return;
+
+        // Sort coordinates by the order in listIds so it represents a travel route
+        const pathCoords = listIds
+            .map(id => stores.find(s => s.id === id))
+            .filter((s): s is Store => !!s)
+            .map(s => ({ lat: s.lat, lng: s.lng }));
+
+        if (pathCoords.length < 2) return;
+
+        console.log("Drawing route polyline for", pathCoords.length, "stores");
+
+        const polyline = new google.maps.Polyline({
+            path: pathCoords,
+            geodesic: true,
+            strokeColor: routeType === "favorites" ? "#F43F5E" : "#F97316", // Rose pink or Orange
+            strokeOpacity: 0.8,
+            strokeWeight: 4,
+            icons: [
+                {
+                    icon: {
+                        path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
+                        scale: 2.5,
+                        strokeColor: routeType === "favorites" ? "#E11D48" : "#EA580C",
+                    },
+                    offset: "100%",
+                    repeat: "80px",
+                },
+            ],
+        });
+
+        polyline.setMap(map);
+        routePolylineRef.current = polyline;
+
+        return () => {
+            if (polyline) {
+                polyline.setMap(null);
+            }
+        };
+    }, [map, showRoute, routeType, userStats, stores]);
+
     // Cleanup on unmount
     useEffect(() => {
         return () => {
@@ -455,6 +514,9 @@ export function MapContainer({
             }
             if (closeTimeoutRef.current) {
                 clearTimeout(closeTimeoutRef.current);
+            }
+            if (routePolylineRef.current) {
+                routePolylineRef.current.setMap(null);
             }
         };
     }, []);

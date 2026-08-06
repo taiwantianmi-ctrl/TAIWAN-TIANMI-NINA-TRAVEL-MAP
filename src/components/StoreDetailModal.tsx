@@ -217,8 +217,8 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                             onClick={() => setActiveTab("intro")}
                                             className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "intro" 
-                                                    ? "bg-[#FDF8F2] border-[#EADAC2] text-[#7A5C51] translate-y-0 shadow-sm" 
-                                                    : "bg-[#E3D4C1] border-[#CEBDA6] text-gray-500 hover:text-gray-700 translate-y-0.5 hover:bg-[#E3D4C1]/90"
+                                                    ? "bg-[#7A5C51] border-[#7A5C51] text-white translate-y-0 shadow-sm" 
+                                                    : "bg-[#EADAC2]/40 border-[#EADAC2] text-[#7A5C51]/80 hover:text-[#7A5C51] translate-y-0.5 hover:bg-[#EADAC2]/60"
                                             }`}
                                         >
                                             店舗紹介
@@ -227,8 +227,8 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                             onClick={() => setActiveTab("story")}
                                             className={`px-5 py-2.5 text-xs md:text-sm font-black rounded-t-2xl border-2 border-b-0 transition-all cursor-pointer ${
                                                 activeTab === "story" 
-                                                    ? "bg-[#FDF8F2] border-[#EADAC2] text-[#7A5C51] translate-y-0 shadow-sm" 
-                                                    : "bg-[#E3D4C1] border-[#CEBDA6] text-gray-500 hover:text-gray-700 translate-y-0.5 hover:bg-[#E3D4C1]/90"
+                                                    ? "bg-[#7A5C51] border-[#7A5C51] text-white translate-y-0 shadow-sm" 
+                                                    : "bg-[#EADAC2]/40 border-[#EADAC2] text-[#7A5C51]/80 hover:text-[#7A5C51] translate-y-0.5 hover:bg-[#EADAC2]/60"
                                             }`}
                                         >
                                             アレックスのおすすめポイント
@@ -247,14 +247,30 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
 
                                     <div className="min-h-[80px]">
                                         {activeTab === "intro" && store.descriptionJP && (
-                                            <p className="text-[#5D4037] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
-                                                {store.descriptionJP}
-                                            </p>
+                                            <div className="space-y-3">
+                                                {store.descriptionJP.split('\n').map((line, idx) => 
+                                                    line.trim() === '' ? (
+                                                        <div key={idx} className="h-2" />
+                                                    ) : (
+                                                        <p key={idx} className="text-[#5D4037] leading-loose text-xs md:text-sm font-medium">
+                                                            {line}
+                                                        </p>
+                                                    )
+                                                )}
+                                            </div>
                                         )}
                                         {activeTab === "story" && store.descriptionCH && (
-                                            <p className="text-[#5D4037] leading-relaxed text-xs md:text-sm font-medium whitespace-pre-wrap">
-                                                {store.descriptionCH}
-                                            </p>
+                                            <div className="space-y-3">
+                                                {store.descriptionCH.split('\n').map((line, idx) => 
+                                                    line.trim() === '' ? (
+                                                        <div key={idx} className="h-2" />
+                                                    ) : (
+                                                        <p key={idx} className="text-[#5D4037] leading-loose text-xs md:text-sm font-medium">
+                                                            {line}
+                                                        </p>
+                                                    )
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 </div>
