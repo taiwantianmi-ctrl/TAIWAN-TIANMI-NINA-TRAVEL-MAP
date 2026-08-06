@@ -8,7 +8,7 @@ import { AdminPanel } from "@/components/AdminPanel";
 import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X, Share2 } from "lucide-react";
+import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X, Share2, Move } from "lucide-react";
 import { calculateDistance, formatDistance, getOptimizedImageUrl, getStoreAreaId, AREAS } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
@@ -635,6 +635,17 @@ export default function Home() {
               <Share2 size={12} />
               <span>共有</span>
             </button>
+
+            <button
+              onClick={() => {
+                setShowRoute(!showRoute);
+                setRouteType(activeTab);
+              }}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showRoute ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+            >
+              <Move size={12} />
+              <span>マイルート ({showRoute ? 'ON' : 'OFF'})</span>
+            </button>
           </div>
         )}
       </div>
@@ -869,13 +880,19 @@ export default function Home() {
             <div className="px-5 pb-3.5 border-b border-gray-100 flex items-center justify-between shrink-0">
               <div className="flex gap-2">
                 <button
-                  onClick={() => setActiveTab("favorites")}
+                  onClick={() => {
+                    setActiveTab("favorites");
+                    setRouteType("favorites");
+                  }}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "favorites" ? 'bg-pink-400 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
                   お気に入り ({userStats.favorites.length})
                 </button>
                 <button
-                  onClick={() => setActiveTab("visited")}
+                  onClick={() => {
+                    setActiveTab("visited");
+                    setRouteType("visited");
+                  }}
                   className={`px-4 py-2 rounded-full text-xs font-black transition-colors cursor-pointer ${activeTab === "visited" ? 'bg-orange-500 text-white shadow-md' : 'bg-gray-50 text-gray-500'}`}
                 >
                   行ってみたい ({userStats.visited.length})
