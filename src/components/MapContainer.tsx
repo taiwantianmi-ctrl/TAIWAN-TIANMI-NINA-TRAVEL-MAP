@@ -7,7 +7,7 @@ import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, Che
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
-import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
+import { calculateDistance, formatDistance, getOptimizedImageUrl, AREAS } from "@/lib/utils";
 
 interface MapContainerProps {
     stores: Store[];
@@ -17,19 +17,32 @@ interface MapContainerProps {
     isAdminMode?: boolean;
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
     onToggleStat?: (type: "visited" | "favorites", id: string) => void;
+    lang?: "ja" | "zh";
     onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
     focusedStore?: Store | null;
     onPopupActiveChange?: (active: boolean) => void;
+    selectedAreaId?: string;
 }
 
-export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdminMode, onLocationSelect, onToggleStat, onUserLocationChange, focusedStore, onPopupActiveChange }: MapContainerProps) {
+export function MapContainer({ 
+    stores, 
+    genres, 
+    onStoreSelect, 
+    userStats, 
+    isAdminMode, 
+    onLocationSelect, 
+    onToggleStat, 
+    lang = "ja", 
+    onUserLocationChange, 
+    focusedStore, 
+    onPopupActiveChange,
+    selectedAreaId
+}: MapContainerProps) {
     const map = useMap();
     const placesLib = useMapsLibrary("places");
     const adminInputRef = useRef<HTMLInputElement>(null);
-    const [userSearchQuery, setUserSearchQuery] = useState("");
     const [tempPin, setTempPin] = useState<{ lat: number; lng: number } | null>(null);
     const [showTools, setShowTools] = useState(false);
-    const [showSearchResults, setShowSearchResults] = useState(false);
     const toolsTimerRef = useRef<NodeJS.Timeout | null>(null);
     const clusterer = useRef<MarkerClusterer | null>(null);
     const markerElements = useRef<Record<string, google.maps.marker.AdvancedMarkerElement>>({});
@@ -39,16 +52,10 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
-
-    const updateActivePopup = useCallback((val: typeof activePopup) => {
-        setActivePopup(val);
-        if (onPopupActiveChange) {
-            onPopupActiveChange(val !== null);
-        }
-    }, [onPopupActiveChange]);
-
     const [isMobile, setIsMobile] = useState(false);
     const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
+    const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const prevAreaIdRef = useRef<string | null>(null);
 
     useEffect(() => {
         const handleResize = () => {
@@ -59,6 +66,14 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    const updateActivePopup = useCallback((val: typeof activePopup) => {
+        setActivePopup(val);
+        if (onPopupActiveChange) {
+            onPopupActiveChange(val !== null);
+        }
+    }, [onPopupActiveChange]);
+
+
     const getYouTubeId = (url?: string) => {
         if (!url) return null;
         const match = url.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=|shorts\/)([^#\&\?]*).*/);
@@ -66,6 +81,11 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
     };
 
     const handleMarkerHover = useCallback((store: Store) => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+
         // もし既にこの店舗のポップアップが開いていれば再生成しない（動画が切り替わらないように）
         if (activePopup?.storeId === store.id) return;
 
@@ -73,14 +93,21 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         let imageUrl = null;
 
         const validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id) as string[] || [];
-        if (validVideos.length > 0) {
-            // ランダムに1つだけ取得
-            const randIdx = Math.floor(Math.random() * validVideos.length);
-            videoId = validVideos[randIdx];
-        } else if (store.images && store.images.length > 0) {
-            // ランダムに画像を選択
-            const randIdx = Math.floor(Math.random() * store.images.length);
-            imageUrl = store.images[randIdx];
+        const validImages = store.images || [];
+
+        // すべての動画と画像をプールして、その中から完全にランダムで選ぶ
+        const mediaPool: { type: "video" | "image"; value: string }[] = [];
+        validVideos.forEach(vId => mediaPool.push({ type: "video", value: vId }));
+        validImages.forEach(img => mediaPool.push({ type: "image", value: img }));
+
+        if (mediaPool.length > 0) {
+            const randIdx = Math.floor(Math.random() * mediaPool.length);
+            const selected = mediaPool[randIdx];
+            if (selected.type === "video") {
+                videoId = selected.value;
+            } else {
+                imageUrl = selected.value;
+            }
         }
 
         updateActivePopup({ storeId: store.id, videoId, imageUrl });
@@ -97,14 +124,6 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         }
     }, [focusedStore, map, isMobile, handleMarkerHover]);
 
-    const zoomToAll = useCallback(() => {
-        if (!map || stores.length === 0) return;
-        const bounds = new google.maps.LatLngBounds();
-        stores.forEach(store => bounds.extend({ lat: store.lat, lng: store.lng }));
-        map.fitBounds(bounds, { top: 120, bottom: 40, left: 40, right: 40 });
-        triggerTools();
-    }, [map, stores]);
-
     const triggerTools = (manualToggle = false) => {
         if (manualToggle) {
             setShowTools(!showTools);
@@ -117,6 +136,14 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             setShowTools(false);
         }, 2000);
     };
+
+    const zoomToAll = useCallback(() => {
+        if (!map || stores.length === 0) return;
+        const bounds = new google.maps.LatLngBounds();
+        stores.forEach(store => bounds.extend({ lat: store.lat, lng: store.lng }));
+        map.fitBounds(bounds, { top: 120, bottom: 40, left: 40, right: 40 });
+        triggerTools();
+    }, [map, stores]);
 
     const jumpWithTransition = useCallback((targetPos: { lat: number; lng: number }, targetZoom: number) => {
         if (!map) return;
@@ -185,6 +212,20 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
         requestAnimationFrame(animate);
     }, [map]);
+
+    useEffect(() => {
+        if (selectedAreaId && map && selectedAreaId !== prevAreaIdRef.current) {
+            prevAreaIdRef.current = selectedAreaId;
+            const area = AREAS.find(a => a.id === selectedAreaId);
+            if (area) {
+                if (selectedAreaId === "all") {
+                    zoomToAll();
+                } else {
+                    smoothZoomTo(area.center, area.zoom);
+                }
+            }
+        }
+    }, [selectedAreaId, map, zoomToAll, smoothZoomTo]);
 
     // Initialize Clusterer
     useEffect(() => {
@@ -335,32 +376,7 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
         });
     }, [placesLib, map, isAdminMode, onLocationSelect]);
 
-    const filteredStoreResults = useMemo(() => {
-        if (!userSearchQuery) return [];
-        const query = userSearchQuery.toLowerCase();
-        return stores.filter(s => {
-            const nameJP = s.nameJP?.toLowerCase() || "";
-            const nameCH = s.nameCH?.toLowerCase() || "";
-            const addressJP = s.addressJP?.toLowerCase() || "";
-            const addressCH = s.addressCH?.toLowerCase() || "";
-            const descJP = s.descriptionJP?.toLowerCase() || "";
-            const descCH = s.descriptionCH?.toLowerCase() || "";
-            
-            // Search genres
-            const genreNames = s.genres.map(gId => {
-                const g = genres.find(genre => genre.id === gId);
-                return g ? `${g.nameJP} ${g.nameCH}`.toLowerCase() : "";
-            }).join(" ");
 
-            return nameJP.includes(query) || 
-                   nameCH.includes(query) || 
-                   addressJP.includes(query) || 
-                   addressCH.includes(query) ||
-                   descJP.includes(query) ||
-                   descCH.includes(query) ||
-                   genreNames.includes(query);
-        }).slice(0, 5);
-    }, [userSearchQuery, stores, genres]);
 
     const toggleTracking = () => {
         if (!navigator.geolocation) {
@@ -410,6 +426,9 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
             if (watchIdRef.current !== null) {
                 navigator.geolocation.clearWatch(watchIdRef.current);
             }
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+            }
         };
     }, []);
 
@@ -430,66 +449,6 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
 
     return (
         <div className="w-full h-full relative bg-white overflow-hidden rounded-[2.5rem]">
-            {/* User Search Bar - Moved to top-left and slimmed down */}
-            {!isAdminMode && (
-                <div className="absolute top-4 left-4 z-[50] w-[calc(100%-2rem)] max-w-[280px] pointer-events-none">
-                    <div className="bg-white/90 backdrop-blur-xl p-1 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.08)] border border-white/50 flex flex-col pointer-events-auto transition-all">
-                        <div className="flex items-center gap-2 px-2">
-                            <Search className="text-pink-400 shrink-0" size={16} />
-                            <input
-                                value={userSearchQuery}
-                                onChange={(e) => {
-                                    setUserSearchQuery(e.target.value);
-                                    setShowSearchResults(true);
-                                }}
-                                onFocus={() => setShowSearchResults(true)}
-                                className="w-full py-2 h-9 bg-transparent border-none outline-none text-xs font-bold text-sweet-brown placeholder-gray-400"
-                                placeholder="お店の名前で検索..."
-                            />
-                            {userSearchQuery && (
-                                <button onClick={() => { setUserSearchQuery(""); setShowSearchResults(false); }} className="p-1 text-gray-400 hover:text-pink-500 transition-colors">
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
-
-                        <AnimatePresence>
-                            {showSearchResults && filteredStoreResults.length > 0 && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="overflow-hidden border-t border-gray-100/50"
-                                >
-                                    <div className="py-2">
-                                        {filteredStoreResults.map(s => (
-                                            <button
-                                                key={s.id}
-                                                onClick={() => {
-                                                    map?.panTo({ lat: s.lat, lng: s.lng });
-                                                    map?.setZoom(17);
-                                                    onStoreSelect(s);
-                                                    setShowSearchResults(false);
-                                                }}
-                                                className="w-full px-4 py-3 flex items-center gap-3 hover:bg-pink-50 transition-colors text-left"
-                                            >
-                                                <div className="w-8 h-8 rounded-full bg-white shadow-sm flex items-center justify-center text-sm border border-pink-50">
-                                                    {getGenreInfo(s).icon}
-                                                </div>
-                                                <div className="flex-1">
-                                                    <div className="text-sm font-black text-sweet-brown">{s.nameJP}</div>
-                                                    <div className="text-[10px] text-gray-400 font-bold">{s.nameCH}</div>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
-                </div>
-            )}
-
             {/* Admin Search */}
             {isAdminMode && (
                 <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[50] w-[calc(100%-2rem)] max-w-md pointer-events-none">
@@ -513,7 +472,6 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                 gestureHandling={"greedy"}
                 className="w-full h-full"
                 onClick={(e) => {
-                    setShowSearchResults(false);
                     updateActivePopup(null);
                     if (isAdminMode && e.detail.latLng && onLocationSelect) {
                         const { lat, lng } = e.detail.latLng;
@@ -526,17 +484,43 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                     const info = getGenreInfo(store);
                     const isFav = userStats.favorites.includes(store.id);
                     const isVis = userStats.visited.includes(store.id);
+                    const isActive = activePopup?.storeId === store.id;
+
+                    // Determine if the store is in the upper half or right half of the current map view
+                    const center = map?.getCenter();
+                    const isUpperHalf = center ? (store.lat > center.lat()) : false;
+                    const isRightHalf = center ? (store.lng > center.lng()) : false;
+
+                    const popupClassName = isMobile
+                        ? `absolute ${isUpperHalf ? "top-[calc(100%+8px)]" : "bottom-[calc(100%+8px)]"} left-1/2 -translate-x-1/2 w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`
+                        : `absolute top-1/2 -translate-y-1/2 ${isRightHalf ? "right-[calc(100%+8px)]" : "left-[calc(100%+8px)]"} w-36 bg-white/95 backdrop-blur-xl p-2 rounded-xl shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-2 border-white z-[9999] cursor-default`;
+
+                    const popupInitialExit = isMobile
+                        ? { opacity: 0, y: isUpperHalf ? -10 : 10, scale: 0.9 }
+                        : { opacity: 0, x: isRightHalf ? 10 : -10, scale: 0.9 };
 
                     return (
                         <AdvancedMarker
                             key={store.id}
                             position={{ lat: store.lat, lng: store.lng }}
                             ref={(marker) => onMarkerMount(store.id, marker)}
-                            zIndex={100}
+                            zIndex={isActive ? 9999 : 100}
                         >
                             <div
-                                onMouseEnter={() => !isMobile && handleMarkerHover(store)}
-                                onMouseLeave={() => !isMobile && updateActivePopup(null)}
+                                onMouseEnter={() => {
+                                    if (isMobile) return;
+                                    if (closeTimeoutRef.current) {
+                                        clearTimeout(closeTimeoutRef.current);
+                                        closeTimeoutRef.current = null;
+                                    }
+                                    handleMarkerHover(store);
+                                }}
+                                onMouseLeave={() => {
+                                    if (isMobile) return;
+                                    closeTimeoutRef.current = setTimeout(() => {
+                                        updateActivePopup(null);
+                                    }, 300); // 300ms delay to allow moving mouse to the popup
+                                }}
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     if (isMobile) {
@@ -562,7 +546,8 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
                                 style={{
                                     pointerEvents: 'auto',
-                                    transform: `scale(${zoom <= 9 ? 0.7 : zoom <= 11 ? 0.85 : zoom <= 13 ? 1.0 : zoom <= 15 ? 1.25 : 1.5})`
+                                    transform: `scale(${zoom <= 9 ? 1.4 : zoom <= 11 ? 1.7 : zoom <= 13 ? 2.0 : zoom <= 15 ? 2.5 : 3.0})`,
+                                    zIndex: isActive ? 9999 : 100
                                 }}
                             >
                                 {/* Visited Checkmark Badge */}
@@ -591,48 +576,60 @@ export function MapContainer({ stores, genres, onStoreSelect, userStats, isAdmin
                                 
                                 {/* Interactive Popup */}
                                 <AnimatePresence>
-                                    {activePopup?.storeId === store.id && (
+                                    {isActive && (
                                         <motion.div
-                                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                            initial={popupInitialExit}
+                                            animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+                                            exit={popupInitialExit}
                                             transition={{ duration: 0.2 }}
-                                            className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 w-72 bg-white/95 backdrop-blur-xl p-2.5 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.15)] border-2 border-white z-50 cursor-default"
+                                            className={popupClassName}
                                             onClick={(e) => e.stopPropagation()}
+                                            onMouseEnter={() => {
+                                                if (closeTimeoutRef.current) {
+                                                    clearTimeout(closeTimeoutRef.current);
+                                                    closeTimeoutRef.current = null;
+                                                }
+                                            }}
                                         >
-                                            <div className="text-xs font-black text-sweet-brown mb-2 text-center px-1 truncate">{store.nameJP}</div>
+                                            {/* ポップアップを閉じる「×」ボタン */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActivePopup(null);
+                                                }}
+                                                className="absolute top-1.5 right-1.5 p-0.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors z-50 flex items-center justify-center cursor-pointer shadow-sm"
+                                                title="閉じる"
+                                            >
+                                                <X size={10} strokeWidth={2.5} />
+                                            </button>
+
+                                            <div className="text-[10px] font-black text-sweet-brown mb-1.5 text-center px-4 truncate">{store.nameJP}</div>
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
-                                                <div className="relative aspect-video w-full bg-black rounded-xl overflow-hidden mb-2 shadow-inner">
-                                                    <a 
-                                                        href={`https://www.youtube.com/watch?v=${activePopup.videoId}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="absolute inset-0 z-20"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        title="YouTubeで見る"
-                                                    />
+                                                <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner">
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=hd720`}
-                                                        className="w-full h-full pointer-events-none z-10"
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=small`}
+                                                        className="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50 pointer-events-none z-10 border-0"
                                                         allow="autoplay"
                                                     />
+                                                    {/* 透明なオーバーレイでクリック防止および地図操作の邪魔をしないようにする */}
+                                                    <div className="absolute inset-0 z-20 pointer-events-auto cursor-default" />
                                                 </div>
                                             ) : activePopup.imageUrl ? (
-                                                <div className="aspect-video w-full bg-gray-100 rounded-xl overflow-hidden mb-2 shadow-inner">
+                                                <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">
                                                     <img src={activePopup.imageUrl.includes('drive.google.com/uc') ? activePopup.imageUrl.replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w600') : activePopup.imageUrl} className="w-full h-full object-cover" />
                                                 </div>
                                             ) : null}
 
-                                            <div className="flex justify-center mt-2">
+                                            <div className="flex justify-center mt-1.5">
                                                 <button 
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         updateActivePopup(null);
                                                         onStoreSelect(store);
                                                     }}
-                                                    className="w-[134px] py-1.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-[9px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
+                                                    className="w-[100px] py-1 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-lg text-[8px] font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1"
                                                 >
                                                     お店に入る ➔
                                                 </button>

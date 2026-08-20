@@ -344,7 +344,7 @@ export function AdminPanel({
                                             <div className="space-y-4">
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                     <input className="w-full p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sm" placeholder="店名 (日本語)" value={editingStore.nameJP || ""} onChange={e => setEditingStore({ ...editingStore, nameJP: e.target.value })} />
-                                                    <input className="w-full p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sweet-brown/60 text-sm" placeholder="店名 (中国語)" value={editingStore.nameCH || ""} onChange={e => setEditingStore({ ...editingStore, nameCH: e.target.value })} />
+                                                    <input className="w-full p-3 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none font-bold text-sweet-brown/60 text-sm" placeholder="店名 (現地語)" value={editingStore.nameCH || ""} onChange={e => setEditingStore({ ...editingStore, nameCH: e.target.value })} />
                                                 </div>
 
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -353,7 +353,7 @@ export function AdminPanel({
                                                         <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300" size={14} />
                                                     </div>
                                                     <div className="relative">
-                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium text-sweet-brown/60" placeholder="住所 (中国語)" value={editingStore.addressCH || ""} onChange={e => setEditingStore({ ...editingStore, addressCH: e.target.value })} />
+                                                        <input className="w-full p-3 pl-9 rounded-xl border-2 border-gray-100 focus:border-pink-200 outline-none text-xs font-medium text-sweet-brown/60" placeholder="住所 (現地語)" value={editingStore.addressCH || ""} onChange={e => setEditingStore({ ...editingStore, addressCH: e.target.value })} />
                                                         <MapIcon className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300/60" size={14} />
                                                     </div>
                                                 </div>
@@ -382,8 +382,8 @@ export function AdminPanel({
                                                         <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed" placeholder="日本語で紹介を入力..." value={editingStore.descriptionJP || ""} onChange={e => setEditingStore({ ...editingStore, descriptionJP: e.target.value })} />
                                                     </div>
                                                     <div className="space-y-1">
-                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">紹介文 (中国語)</p>
-                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed text-sweet-brown/60" placeholder="中国語（繁体字）で紹介を入力..." value={editingStore.descriptionCH || ""} onChange={e => setEditingStore({ ...editingStore, descriptionCH: e.target.value })} />
+                                                        <p className="text-[10px] font-black text-gray-400 ml-1 uppercase">アレックスのおすすめポイント</p>
+                                                        <textarea className="w-full p-4 rounded-xl border-2 border-gray-100 h-24 md:h-32 resize-none focus:border-pink-200 outline-none font-medium text-xs leading-relaxed text-sweet-brown/80" placeholder="アレックスがおすすめするポイントや詳細情報を入力..." value={editingStore.descriptionCH || ""} onChange={e => setEditingStore({ ...editingStore, descriptionCH: e.target.value })} />
                                                     </div>
                                                 </div>
                                             </div>
