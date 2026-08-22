@@ -9,6 +9,7 @@ import { X, Plus, Trash2, Edit2, Save, Lock, Search, Image as ImageIcon, Loader2
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { getOptimizedImageUrl } from "@/lib/utils";
 
 interface AdminPanelProps {
     stores: Store[];
@@ -414,7 +415,7 @@ export function AdminPanel({
                                                 <div className="grid grid-cols-4 gap-2 mb-4">
                                                     {editingStore.images?.map((url, i) => (
                                                         <div key={i} className="relative aspect-square rounded-xl overflow-hidden border-2 border-pink-100 group">
-                                                            <img src={url.includes('drive.google.com/uc') ? url.replace(/uc\?export=view&id=([^&]+)/, 'thumbnail?id=$1&sz=w1000') : url} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                                            <img src={getOptimizedImageUrl(url, 1000)} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                                             <button
                                                                 onClick={() => setEditingStore({ ...editingStore, images: editingStore.images?.filter((_, idx) => idx !== i) })}
                                                                 className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-lg opacity-0 group-hover:opacity-100"
@@ -445,8 +446,7 @@ export function AdminPanel({
                                                             else if (match2 && match2[1]) driveId = match2[1];
                                                             
                                                             if (driveId) {
-                                                                // 最近のGoogle Driveの仕様変更に対応するため、thumbnailエンドポイントを使用
-                                                                url = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
+                                                                url = `https://lh3.googleusercontent.com/d/${driveId}`;
                                                             }
                                                             const current = editingStore.images || [];
                                                             if (current.length >= 4) {

@@ -32,11 +32,20 @@ export function formatDistance(meters: number): string {
 export function getOptimizedImageUrl(url: string, size = 600): string {
     if (!url) return "";
     
-    // Google Drive のプレビューURLをWebフレンドリーなサムネイルURLに変換
-    if (url.includes("drive.google.com/uc") || url.includes("drive.google.com/open")) {
-        const match = url.match(/id=([^&]+)/);
-        if (match && match[1]) {
-            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w${size}`;
+    // Google Drive 関連の各種URLを判定
+    if (url.includes("drive.google.com") || url.includes("googleusercontent.com")) {
+        let driveId = "";
+        const match1 = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        const match2 = url.match(/id=([a-zA-Z0-9_-]+)/);
+        const match3 = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        
+        if (match1 && match1[1]) driveId = match1[1];
+        else if (match2 && match2[1]) driveId = match2[1];
+        else if (match3 && match3[1]) driveId = match3[1];
+        
+        if (driveId) {
+            // クッキー制限を回避して直接表示できる lh3.googleusercontent.com のパスを生成
+            return `https://lh3.googleusercontent.com/d/${driveId}=w${size}`;
         }
     }
     
