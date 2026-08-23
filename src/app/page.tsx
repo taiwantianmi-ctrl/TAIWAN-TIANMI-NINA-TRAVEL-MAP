@@ -447,52 +447,53 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Middle: Search Bar (Desktop Only) */}
+          {/* Right: 2-row Controls (Desktop Only) */}
           {!isMobile && (
-            <div className="flex-1 max-w-md mx-6 relative">
-              <div className="relative flex items-center">
-                <input
-                  type="text"
-                  placeholder="店名、お菓子、説明、住所から検索..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-10 py-2.5 rounded-full border border-pink-100 bg-[#FFFDFD] focus:bg-white text-xs font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
-                />
-                <div className="absolute left-3.5 text-pink-300 pointer-events-none">
-                  <Search size={16} />
+            <div className="flex flex-col items-end gap-3 shrink-0">
+              {/* Row 1: Search Bar & Share Button */}
+              <div className="flex items-center gap-3">
+                {/* Search Bar */}
+                <div className="w-80 relative">
+                  <div className="relative flex items-center">
+                    <input
+                      type="text"
+                      placeholder="店名、お菓子、説明、住所から検索..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-10 py-2 rounded-full border border-pink-100 bg-[#FFFDFD] focus:bg-white text-xs font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
+                    />
+                    <div className="absolute left-3.5 text-pink-300 pointer-events-none">
+                      <Search size={16} />
+                    </div>
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-3.5 text-pink-300 hover:text-pink-500 cursor-pointer"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3.5 text-pink-300 hover:text-pink-500 cursor-pointer"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
+
+                {/* Share Button */}
+                <button
+                  onClick={handleShareList}
+                  className="bg-gradient-to-r from-pink-400 to-orange-400 hover:from-pink-500 hover:to-orange-500 text-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-[38px]"
+                >
+                  <Share2 size={14} />
+                  <span>リストを共有</span>
+                </button>
               </div>
-            </div>
-          )}
 
-          {/* Right: Statistics & Share (Desktop Only) */}
-          {!isMobile && (
-            <div className="flex flex-row items-center gap-4 shrink-0">
-              {/* Share Button */}
-              <button
-                onClick={handleShareList}
-                className="bg-gradient-to-r from-pink-400 to-orange-400 hover:from-pink-500 hover:to-orange-500 text-white px-4 py-2.5 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer"
-              >
-                <Share2 size={14} />
-                <span>リストを共有</span>
-              </button>
-
-              {/* Statistics */}
+              {/* Row 2: Statistics */}
               <div className="flex items-center gap-2">
-                <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-pink-500 border border-pink-100">
+                <div className="bg-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black text-pink-500 border border-pink-100">
                   <Heart size={14} fill="currentColor" />
-                  <span>御用達店</span>
+                  <span>ワタシの御用達店</span>
                   <span className="ml-0.5 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
                 </div>
-                <div className="bg-white px-3 md:px-5 py-2 rounded-full shadow-md flex items-center gap-1.5 md:gap-2 text-[10px] md:text-sm font-black text-orange-600 border border-orange-100">
+                <div className="bg-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black text-orange-600 border border-orange-100">
                   <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
                   <span>行ってみたい！</span>
                   <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
