@@ -664,7 +664,7 @@ export function MapContainer({
             </Map>
 
             {/* Premium Map Controls */}
-            <div className="absolute bottom-6 right-6 flex flex-col items-center gap-4 z-[40]">
+            <div className="absolute bottom-6 right-6 md:bottom-12 md:right-12 flex flex-col items-center gap-4 z-[40]">
                 {/* Tools Stack */}
                 <div className="flex flex-col items-center gap-3">
                     <AnimatePresence>

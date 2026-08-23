@@ -82,7 +82,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                     className="relative bg-white/95 backdrop-blur-2xl w-full max-w-lg max-h-[85vh] rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_30px_80px_rgba(93,64,55,0.18)] overflow-hidden flex flex-col border-4 border-white/80"
                 >
                     {/* Header Image Area */}
-                    <div className="relative h-48 md:h-64 bg-gray-50 flex-shrink-0 group overflow-hidden">
+                    <div className="relative h-36 md:h-64 bg-gray-100 flex-shrink-0 group overflow-hidden">
                         <AnimatePresence mode="popLayout" initial={false}>
                             {store.images && store.images.length > 0 ? (
                                 <motion.div
@@ -173,7 +173,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                     </div>
 
                     {/* Content Area */}
-                    <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8 scrollbar-none">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-10 space-y-6 md:space-y-8 scrollbar-none">
                         <div className="space-y-2">
                             <h2 className="text-2xl md:text-3xl font-black text-sweet-brown tracking-tighter leading-none">
                                 {store.nameJP}
@@ -237,7 +237,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                 ) : null}
 
                                 {/* Tab Body Container (Watercolor style) */}
-                                <div className={`p-6 md:p-8 bg-[#FDF8F2] rounded-[2rem] border-2 border-[#EADAC2] border-l-8 border-l-[#E2A69A]/80 shadow-[0_15px_35px_rgba(218,185,150,0.12),_inset_0_0_24px_rgba(255,255,255,0.4)] ${store.descriptionJP && store.descriptionCH ? "rounded-tl-none" : ""}`}>
+                                <div className={`p-4 md:p-8 bg-[#FDF8F2] rounded-[2rem] border-2 border-[#EADAC2] border-l-8 border-l-[#E2A69A]/80 shadow-[0_15px_35px_rgba(218,185,150,0.12),_inset_0_0_24px_rgba(255,255,255,0.4)] ${store.descriptionJP && store.descriptionCH ? "rounded-tl-none" : ""}`}>
                                     {/* Small title header if only one description exists */}
                                     {!(store.descriptionJP && store.descriptionCH) && (
                                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">
@@ -252,7 +252,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                                     line.trim() === '' ? (
                                                         <div key={idx} className="h-2" />
                                                     ) : (
-                                                        <p key={idx} className="text-[#5D4037] leading-loose text-xs md:text-sm font-medium">
+                                                        <p key={idx} className="text-[#5D4037] leading-loose text-[11px] md:text-sm font-medium">
                                                             {line}
                                                         </p>
                                                     )
@@ -265,7 +265,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                                     line.trim() === '' ? (
                                                         <div key={idx} className="h-2" />
                                                     ) : (
-                                                        <p key={idx} className="text-[#5D4037] leading-loose text-xs md:text-sm font-medium">
+                                                        <p key={idx} className="text-[#5D4037] leading-loose text-[11px] md:text-sm font-medium">
                                                             {line}
                                                         </p>
                                                     )
