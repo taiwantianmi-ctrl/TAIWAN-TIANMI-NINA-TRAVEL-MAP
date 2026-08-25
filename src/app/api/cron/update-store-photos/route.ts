@@ -68,9 +68,20 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        // Step C: Fetch redirect URLs for top 4 photos to avoid embedding API key
-        const newImages: string[] = [];
-        const maxPhotos = Math.min(photos.length, 4);
+        // Step C: Keep Google Drive images and only update Google Maps image slots
+        const currentImages: string[] = store.images || [];
+        const driveImages = currentImages.filter((url: string) => 
+          url.includes("drive.google.com") || url.includes("googleusercontent.com/d/")
+        );
+        const availableSlots = Math.max(0, 4 - driveImages.length);
+
+        if (availableSlots <= 0) {
+          results.push({ storeId, name: store.nameJP, status: "skip", reason: "All 4 slots occupied by Google Drive images" });
+          continue;
+        }
+
+        const mapsImages: string[] = [];
+        const maxPhotos = Math.min(photos.length, availableSlots);
 
         for (let i = 0; i < maxPhotos; i++) {
           const photoRef = photos[i].photo_reference;
@@ -79,17 +90,19 @@ export async function GET(request: NextRequest) {
           // Fetch with HEAD method and follow redirects to get the underlying googleusercontent CDN URL
           const photoRes = await fetch(photoApiUrl, { method: "HEAD", redirect: "follow" });
           if (photoRes.ok && photoRes.url) {
-            newImages.push(photoRes.url);
+            mapsImages.push(photoRes.url);
           }
         }
 
-        if (newImages.length > 0) {
+        const finalImages = [...driveImages, ...mapsImages];
+
+        if (mapsImages.length > 0 || finalImages.length !== currentImages.length) {
           // Step D: Update images in Firebase
           const storeImagesRef = dbRef(db, `stores/${storeId}/images`);
-          await set(storeImagesRef, newImages);
-          results.push({ storeId, name: store.nameJP, status: "updated", photosCount: newImages.length });
+          await set(storeImagesRef, finalImages);
+          results.push({ storeId, name: store.nameJP, status: "updated", driveCount: driveImages.length, mapsCount: mapsImages.length });
         } else {
-          results.push({ storeId, name: store.nameJP, status: "skip", reason: "Failed to resolve photo URLs" });
+          results.push({ storeId, name: store.nameJP, status: "skip", reason: "No new Google Maps images resolved" });
         }
       } catch (storeError: any) {
         console.error(`Error processing store ${store.nameJP}:`, storeError);
