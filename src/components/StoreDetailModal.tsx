@@ -82,7 +82,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                     className="relative bg-white/95 backdrop-blur-2xl w-full max-w-lg max-h-[85vh] rounded-[2.5rem] md:rounded-[3.5rem] shadow-[0_30px_80px_rgba(93,64,55,0.18)] overflow-hidden flex flex-col border-4 border-white/80"
                 >
                     {/* Header Image Area */}
-                    <div className="relative h-36 md:h-64 bg-gray-100 flex-shrink-0 group overflow-hidden">
+                    <div className="relative h-48 md:h-64 bg-gray-100 flex-shrink-0 group overflow-hidden">
                         <AnimatePresence mode="popLayout" initial={false}>
                             {store.images && store.images.length > 0 ? (
                                 <motion.div
@@ -131,9 +131,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev > 0 ? prev - 1 : store.images.length - 1);
                                     }}
-                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
+                                    className="w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
                                 >
-                                    <ChevronLeft size={24} strokeWidth={3} />
+                                    <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" strokeWidth={3} />
                                 </motion.button>
                                 <motion.button
                                     whileHover={{ scale: 1.1 }}
@@ -142,9 +142,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                         e.stopPropagation();
                                         setActiveImageIndex(prev => prev < store.images.length - 1 ? prev + 1 : 0);
                                     }}
-                                    className="w-12 h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
+                                    className="w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg text-pink-500 hover:text-pink-600 transition-all pointer-events-auto border border-white/50 cursor-pointer"
                                 >
-                                    <ChevronRight size={24} strokeWidth={3} />
+                                    <ChevronRight className="w-4 h-4 md:w-6 md:h-6" strokeWidth={3} />
                                 </motion.button>
                             </div>
                         )}
@@ -166,9 +166,9 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                             whileHover={{ scale: 1.1, rotate: 90 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={onClose}
-                            className="absolute top-6 right-6 w-12 h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 transition-all duration-300 z-10 cursor-pointer border border-white/50"
+                            className="absolute top-3 right-3 md:top-6 md:right-6 w-8 h-8 md:w-12 md:h-12 bg-white/90 backdrop-blur-md rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center text-sweet-brown hover:text-pink-500 transition-all duration-300 z-10 cursor-pointer border border-white/50"
                         >
-                            <X size={24} strokeWidth={2.5} />
+                            <X className="w-4 h-4 md:w-6 md:h-6" strokeWidth={2.5} />
                         </motion.button>
                     </div>
 
