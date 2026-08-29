@@ -194,18 +194,34 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                         </div>
 
                         {/* Travel Helper Card */}
-                        <div className="bg-[#FFFDFD] rounded-2.5xl p-4 border border-pink-100/50 space-y-3 shrink-0 shadow-[0_8px_25px_rgba(255,182,193,0.06)]">
+                        <div className="bg-[#FFFDFD] rounded-2.5xl p-5 border border-pink-100/50 space-y-4 shrink-0 shadow-[0_8px_25px_rgba(255,182,193,0.06)]">
                             <div className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none flex items-center gap-1">
                                 🗺️ タクシー・道案内用
                             </div>
-                            <div className="space-y-1.5">
-                                <div className="text-sm font-black text-sweet-brown tracking-wide">
-                                    我想去「{store.nameCH || store.nameJP}」
+                            
+                            <div className="space-y-4">
+                                {/* 店名 (大きく表示) */}
+                                <div className="space-y-1">
+                                    <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider">目的地（店名）</div>
+                                    <div className="text-lg md:text-xl font-black text-sweet-brown tracking-wide leading-snug">
+                                        我想去「{store.nameCH || store.nameJP}」
+                                    </div>
+                                    <div className="text-[10px] font-medium text-gray-400">
+                                        「{store.nameJP}」へ行きたいです。
+                                    </div>
                                 </div>
-                                <div className="text-[10px] font-bold text-gray-400">
-                                    「{store.nameJP}」へ行きたいです。
-                                </div>
+                                
+                                {/* 住所 (大きく表示 - 台湾語/中国語繁体字) */}
+                                {(store.addressCH || store.addressJP) && (
+                                    <div className="space-y-1 border-t border-dashed border-gray-100 pt-3">
+                                        <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider">住所（台湾語表記）</div>
+                                        <div className="text-sm md:text-base font-black text-sweet-brown tracking-wide leading-relaxed">
+                                            📍 {store.addressCH || store.addressJP}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
+                            
                             <button
                                 onClick={() => {
                                     if (typeof window !== "undefined" && window.speechSynthesis) {
