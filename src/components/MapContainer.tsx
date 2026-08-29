@@ -546,7 +546,7 @@ export function MapContainer({
                                 className="relative cursor-pointer transition-all hover:scale-110 active:scale-95 duration-300"
                                 style={{
                                     pointerEvents: 'auto',
-                                    transform: `scale(${zoom <= 9 ? 1.4 : zoom <= 11 ? 1.7 : zoom <= 13 ? 2.0 : zoom <= 15 ? 2.5 : 3.0})`,
+                                    transform: `scale(${(zoom <= 9 ? 1.4 : zoom <= 11 ? 1.7 : zoom <= 13 ? 2.0 : zoom <= 15 ? 2.5 : 3.0) * (isMobile ? 0.75 : 1.0)})`,
                                     zIndex: isActive ? 9999 : 100
                                 }}
                             >
@@ -675,15 +675,15 @@ export function MapContainer({
                                 exit={{ opacity: 0, scale: 0.8, y: 20 }}
                                 className="flex flex-col gap-2 p-2 bg-white/60 backdrop-blur-xl rounded-[2rem] border-2 border-white shadow-2xl overflow-hidden"
                             >
-                                <button onClick={() => map?.setZoom((map.getZoom() || 0) + 1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
-                                    <Plus size={24} strokeWidth={2.5} />
+                                <button onClick={() => map?.setZoom((map.getZoom() || 0) + 1)} className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
+                                    <Plus className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
                                 </button>
-                                <button onClick={() => map?.setZoom((map.getZoom() || 0) - 1)} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
-                                    <Minus size={24} strokeWidth={2.5} />
+                                <button onClick={() => map?.setZoom((map.getZoom() || 0) - 1)} className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl shadow-sm flex items-center justify-center text-pink-500 hover:bg-pink-50 transition-colors">
+                                    <Minus className="w-5 h-5 md:w-6 md:h-6" strokeWidth={2.5} />
                                 </button>
                                 <div className="h-px bg-white/50 mx-2" />
-                                <button onClick={zoomToAll} className="w-12 h-12 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-600 hover:text-pink-500 transition-colors" title="全ピンを表示">
-                                    <Maximize size={20} />
+                                <button onClick={zoomToAll} className="w-10 h-10 md:w-12 md:h-12 bg-white rounded-xl md:rounded-2xl shadow-sm flex items-center justify-center text-gray-600 hover:text-pink-500 transition-colors" title="全ピンを表示">
+                                    <Maximize className="w-4 h-4 md:w-5 md:h-5" />
                                 </button>
                             </motion.div>
                         )}
@@ -691,17 +691,17 @@ export function MapContainer({
 
                     <button
                         onClick={() => triggerTools(true)}
-                        className={`w-16 h-16 rounded-[2rem] shadow-2xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white rotate-90 ' : 'bg-white text-gray-500 shadow-pink-100'}`}
+                        className={`w-12 h-12 md:w-16 md:h-16 rounded-[1.2rem] md:rounded-[2rem] shadow-2xl flex items-center justify-center transition-all border-2 md:border-4 border-white hover:scale-110 active:scale-95 ${showTools ? 'bg-pink-400 text-white rotate-90 ' : 'bg-white text-gray-500 shadow-pink-100'}`}
                     >
-                        <Move size={28} />
+                        <Move className="w-6 h-6 md:w-7 md:h-7" />
                     </button>
 
                     <button
                         onClick={toggleTracking}
-                        className={`w-14 h-14 backdrop-blur-md rounded-2xl shadow-xl flex items-center justify-center transition-all border-4 border-white hover:scale-110 active:scale-95 ${isTracking ? 'bg-blue-500 text-white shadow-blue-100' : 'bg-white/90 text-gray-500 hover:text-pink-500'}`}
+                        className={`w-10 h-10 md:w-14 md:h-14 backdrop-blur-md rounded-xl md:rounded-2xl shadow-xl flex items-center justify-center transition-all border-2 md:border-4 border-white hover:scale-110 active:scale-95 ${isTracking ? 'bg-blue-500 text-white shadow-blue-100' : 'bg-white/90 text-gray-500 hover:text-pink-500'}`}
                         title={isTracking ? "追跡停止" : "現在地を追跡"}
                     >
-                        <Navigation size={24} className={isTracking ? "animate-pulse" : ""} />
+                        <Navigation className={`w-5 h-5 md:w-6 md:h-6 ${isTracking ? "animate-pulse" : ""}`} />
                     </button>
                 </div>
             </div>
