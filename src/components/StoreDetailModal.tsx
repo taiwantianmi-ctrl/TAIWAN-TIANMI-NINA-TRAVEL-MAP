@@ -210,7 +210,10 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                 onClick={() => {
                                     if (typeof window !== "undefined" && window.speechSynthesis) {
                                         window.speechSynthesis.cancel();
-                                        const text = `我想去${store.nameCH || store.nameJP}`;
+                                        const rawName = store.nameCH || store.nameJP || "";
+                                        // カッコ（半角・全角）とその中身を取り除く
+                                        const cleanName = rawName.replace(/\([^)]*\)/g, "").replace(/（[^）]*）/g, "").trim();
+                                        const text = `我想去${cleanName}`;
                                         const utterance = new SpeechSynthesisUtterance(text);
                                         utterance.lang = "zh-TW";
                                         const voices = window.speechSynthesis.getVoices();
