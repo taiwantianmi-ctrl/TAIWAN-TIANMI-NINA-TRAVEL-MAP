@@ -185,11 +185,6 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                         📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
                                     </span>
                                 )}
-                                {(store.addressJP || store.addressCH) && (
-                                    <span className="text-[10px] font-black text-sweet-brown bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 flex items-center gap-1">
-                                        🏠 {store.addressJP || store.addressCH}
-                                    </span>
-                                )}
                             </div>
                         </div>
 
@@ -212,11 +207,11 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                 </div>
                                 
                                 {/* 住所 (大きく表示 - 台湾語/中国語繁体字) */}
-                                {(store.addressCH || store.addressJP) && (
+                                {store.addressCH && (
                                     <div className="space-y-1 border-t border-dashed border-gray-100 pt-3">
                                         <div className="text-[9px] font-black text-gray-400 uppercase tracking-wider">住所（台湾語表記）</div>
                                         <div className="text-sm md:text-base font-black text-sweet-brown tracking-wide leading-relaxed">
-                                            📍 {store.addressCH || store.addressJP}
+                                            📍 {store.addressCH}
                                         </div>
                                     </div>
                                 )}
