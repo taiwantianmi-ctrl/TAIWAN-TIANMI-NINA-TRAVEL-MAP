@@ -711,12 +711,20 @@ export default function Home() {
                       {/* Info */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span 
-                            style={{ backgroundColor: info.color + '20', color: info.color }}
-                            className="px-1.5 py-0.5 rounded text-[8px] font-black"
-                          >
-                            {info.icon} {genres.find(g => g.id === store.genres[0])?.nameJP}
-                          </span>
+                          {store.genres && store.genres.map(genreId => {
+                            const genre = genres.find(g => g.id === genreId);
+                            if (!genre) return null;
+                            const color = genre.color || "#ffffff";
+                            return (
+                              <span 
+                                key={genreId}
+                                style={{ backgroundColor: color + '20', color: color }}
+                                className="px-1.5 py-0.5 rounded text-[8px] font-black"
+                              >
+                                {genre.iconUrl} {genre.nameJP}
+                              </span>
+                            );
+                          })}
                           {userLocation && (
                             <span className="text-[8px] font-black text-gray-400">
                               📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
