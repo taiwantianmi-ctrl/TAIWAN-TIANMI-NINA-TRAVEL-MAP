@@ -236,7 +236,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                                     : "bg-[#EADAC2]/40 border-[#EADAC2] text-[#7A5C51]/80 hover:text-[#7A5C51] translate-y-0.5 hover:bg-[#EADAC2]/60"
                                             }`}
                                         >
-                                            おすすめポイント
+                                            キュレーターボイス
                                         </button>
                                     </div>
                                 ) : null}
@@ -246,7 +246,7 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                     {/* Small title header if only one description exists */}
                                     {!(store.descriptionJP && store.descriptionCH) && (
                                         <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1 mb-3">
-                                            {activeTab === "intro" ? t.description : "おすすめポイント"}
+                                            {activeTab === "intro" ? t.description : "キュレーターボイス"}
                                         </h3>
                                     )}
 
