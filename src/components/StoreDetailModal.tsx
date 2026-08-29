@@ -5,6 +5,7 @@ import { X, Heart, CheckCircle, MapPin, Youtube, ExternalLink, ChevronLeft, Chev
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
 import { calculateDistance, formatDistance, getOptimizedImageUrl } from "@/lib/utils";
+import { toast } from "react-hot-toast";
 
 interface StoreDetailModalProps {
     store: Store | null;
@@ -190,6 +191,41 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                     </span>
                                 )}
                             </div>
+                        </div>
+
+                        {/* Travel Helper Card */}
+                        <div className="bg-[#FFFDFD] rounded-2.5xl p-4 border border-pink-100/50 space-y-3 shrink-0 shadow-[0_8px_25px_rgba(255,182,193,0.06)]">
+                            <div className="text-[10px] font-black text-pink-400 uppercase tracking-widest leading-none flex items-center gap-1">
+                                🗺️ タクシー・道案内用
+                            </div>
+                            <div className="space-y-1.5">
+                                <div className="text-sm font-black text-sweet-brown tracking-wide">
+                                    我想去「{store.nameCH || store.nameJP}」
+                                </div>
+                                <div className="text-[10px] font-bold text-gray-400">
+                                    「{store.nameJP}」へ行きたいです。
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    if (typeof window !== "undefined" && window.speechSynthesis) {
+                                        window.speechSynthesis.cancel();
+                                        const text = `我想去${store.nameCH || store.nameJP}`;
+                                        const utterance = new SpeechSynthesisUtterance(text);
+                                        utterance.lang = "zh-TW";
+                                        const voices = window.speechSynthesis.getVoices();
+                                        const twVoice = voices.find(v => v.lang === "zh-TW") || 
+                                                        voices.find(v => v.lang.startsWith("zh-"));
+                                        if (twVoice) utterance.voice = twVoice;
+                                        window.speechSynthesis.speak(utterance);
+                                    } else {
+                                        toast.error("お使いの端末は音声合成に対応していません");
+                                    }
+                                }}
+                                className="w-full py-2.5 bg-gradient-to-r from-pink-400 to-orange-400 text-white rounded-xl text-xs font-black hover:opacity-90 transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 duration-100"
+                            >
+                                🔊 台湾語で話す
+                            </button>
                         </div>
 
                         <div className="flex flex-wrap gap-2 md:gap-3">
