@@ -54,6 +54,7 @@ export function AdminPanel({
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [manualImageUrl, setManualImageUrl] = useState("");
+    const [isListOpen, setIsListOpen] = useState(false);
 
     useEffect(() => {
         const passRef = dbRef(db, "admin/password");
@@ -260,7 +261,7 @@ export function AdminPanel({
         );
     }
 
-    const showSidebar = !editingStore && !editingGenre && activeTab !== "settings";
+    const showSidebar = isListOpen && !editingStore && !editingGenre && activeTab !== "settings";
 
     return (
         <div className="fixed inset-0 z-[100] flex flex-col transition-all overflow-hidden pointer-events-none">
@@ -274,6 +275,14 @@ export function AdminPanel({
                         <button onClick={() => { setActiveTab("stores"); setEditingStore(null); setEditingGenre(null); setFormStep(1); }} className={`px-3 md:px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all ${activeTab === "stores" ? "bg-sweet-brown text-white shadow-md" : "text-gray-400"}`}>店舗</button>
                         <button onClick={() => { setActiveTab("genres"); setEditingStore(null); setEditingGenre(null); }} className={`px-3 md:px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all ${activeTab === "genres" ? "bg-pastel-blue text-blue-700 shadow-md" : "text-gray-400"}`}>ジャンル</button>
                         <button onClick={() => { setActiveTab("settings"); setEditingStore(null); setEditingGenre(null); }} className={`px-3 md:px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all ${activeTab === "settings" ? "bg-gray-700 text-white shadow-md" : "text-gray-400"}`}>設定</button>
+                        {(activeTab === "stores" || activeTab === "genres") && (
+                            <button 
+                                onClick={() => setIsListOpen(!isListOpen)} 
+                                className={`px-3 md:px-4 py-2 rounded-xl text-[10px] md:text-xs font-black transition-all border border-dashed ${isListOpen ? "bg-pink-500 text-white border-pink-500 shadow-md" : "bg-white text-sweet-brown hover:bg-gray-50 border-sweet-brown/30"}`}
+                            >
+                                リスト
+                            </button>
+                        )}
                     </nav>
                 </div>
                 <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border-2 border-white flex items-center justify-center text-gray-400 hover:text-pink-500 pointer-events-auto transition-colors"><X size={20} /></button>
