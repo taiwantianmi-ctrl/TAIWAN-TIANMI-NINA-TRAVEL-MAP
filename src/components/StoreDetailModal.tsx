@@ -184,6 +184,11 @@ export function StoreDetailModal({ store, onClose, userStats, onToggleStat, user
                                         📍 {formatDistance(calculateDistance(userLocation.lat, userLocation.lng, store.lat, store.lng))}
                                     </span>
                                 )}
+                                {(store.addressJP || store.addressCH) && (
+                                    <span className="text-[10px] font-black text-sweet-brown bg-gray-50 px-2 py-0.5 rounded-lg border border-gray-100 flex items-center gap-1">
+                                        🏠 {store.addressJP || store.addressCH}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
