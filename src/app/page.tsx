@@ -795,6 +795,17 @@ export default function Home() {
                 setEditingStore(newStore);
                 if (loc.photos) setGooglePhotos(loc.photos);
                 setFormStep(1);
+                toast.success("場所を特定しました！地図上の「ココを登録！」ピンをクリックして入力に進んでください。", {
+                  duration: 5000,
+                  icon: "📍"
+                });
+              }
+            }}
+            onTempPinClick={() => {
+              if (editingStore) {
+                setFormStep(2);
+              } else {
+                toast.error("新規店舗追加（＋）を先に選択してください");
               }
             }}
             onToggleStat={toggleStat}

@@ -16,6 +16,7 @@ interface MapContainerProps {
     userStats: { visited: string[]; favorites: string[] };
     isAdminMode?: boolean;
     onLocationSelect?: (location: { lat: number; lng: number; name?: string; photos?: string[]; address?: string }) => void;
+    onTempPinClick?: () => void;
     onToggleStat?: (type: "visited" | "favorites", id: string) => void;
     lang?: "ja" | "zh";
     onUserLocationChange?: (location: { lat: number; lng: number } | null) => void;
@@ -31,6 +32,7 @@ export function MapContainer({
     userStats, 
     isAdminMode, 
     onLocationSelect, 
+    onTempPinClick,
     onToggleStat, 
     lang = "ja", 
     onUserLocationChange, 
@@ -643,8 +645,18 @@ export function MapContainer({
                 })}
 
                 {isAdminMode && tempPin && (
-                    <AdvancedMarker position={tempPin}>
-                        <div className="relative animate-bounce">
+                    <AdvancedMarker 
+                        position={tempPin}
+                        onClick={() => {
+                            if (onTempPinClick) {
+                                onTempPinClick();
+                            }
+                        }}
+                    >
+                        <div className="relative animate-bounce cursor-pointer flex flex-col items-center" title="クリックしてこの場所を登録">
+                            <div className="absolute bottom-full mb-1 px-2.5 py-1 bg-pink-600 text-white text-[9px] font-black rounded-lg shadow-lg whitespace-nowrap z-50 border border-white/20">
+                                ココを登録！
+                            </div>
                             <MapPin className="text-pink-600 fill-pink-200" size={44} />
                         </div>
                     </AdvancedMarker>

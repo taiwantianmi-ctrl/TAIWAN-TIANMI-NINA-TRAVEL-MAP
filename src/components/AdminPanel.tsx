@@ -63,13 +63,6 @@ export function AdminPanel({
             else { set(passRef, "admin123"); setDbPassword("admin123"); }
         });
     }, []);
-
-    useEffect(() => {
-        if (editingStore && !editingStore.id && editingStore.lat !== 23.6978 && formStep === 1) {
-            setFormStep(2);
-        }
-    }, [editingStore, formStep, setFormStep]);
-
     const handleLogin = () => { if (inputPassword === dbPassword) { setIsAuthenticated(true); toast.success("管理モードでログインしました"); } else toast.error("パスワードが違います"); };
 
     const handleUpdatePassword = async () => {
@@ -291,6 +284,20 @@ export function AdminPanel({
                     <div className="bg-white/95 md:bg-white/90 backdrop-blur-md rounded-[2rem] shadow-2xl border-2 border-white flex-1 flex flex-col overflow-hidden pointer-events-auto">
                         <div className="p-4 border-b border-gray-50 flex justify-between items-center">
                             <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-2">リスト</h3>
+                            {activeTab === "stores" && (
+                                <button 
+                                    onClick={() => { 
+                                        setEditingStore({ lat: 23.6978, lng: 120.9605, images: [], videos: [], genres: [] }); 
+                                        setGooglePhotos([]); 
+                                        setFormStep(1); 
+                                        toast("地図上で店舗を検索するか直接クリックして仮ピンを立て、そのピンをクリックして情報入力に進んでください", { icon: "ℹ️", duration: 6000 });
+                                    }} 
+                                    className="p-2 bg-pink-500 text-white rounded-lg shadow-md hover:bg-pink-600 transition-colors"
+                                    title="店舗を新規追加"
+                                >
+                                    <Plus size={16} strokeWidth={3} />
+                                </button>
+                            )}
                             {activeTab === "genres" && <button onClick={() => setEditingGenre({ nameJP: "", nameCH: "", iconUrl: "🟨", color: "#FF9AA2" })} className="p-2 bg-pastel-blue text-blue-700 rounded-lg shadow-md"><Plus size={16} strokeWidth={3} /></button>}
                         </div>
                         <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-none text-sweet-brown">
