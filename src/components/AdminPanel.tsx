@@ -5,7 +5,7 @@ import { Store, Genre } from "@/types";
 import { ref as dbRef, push, set, remove, onValue, get } from "firebase/database";
 import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import { db, storage } from "@/lib/firebase";
-import { X, Plus, Trash2, Edit2, Save, Lock, Search, Image as ImageIcon, Loader2, Map as MapIcon, Tag, LayoutGrid, CheckCircle, Settings, Key, ChevronLeft, Upload, Globe, Instagram, ShoppingBag } from "lucide-react";
+import { X, Plus, Trash2, Edit2, Save, Lock, Search, Image as ImageIcon, Loader2, Map as MapIcon, Tag, LayoutGrid, CheckCircle, Settings, Key, ChevronLeft, Upload, Globe, Instagram, ShoppingBag, RefreshCw } from "lucide-react";
 import { useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
@@ -55,6 +55,7 @@ export function AdminPanel({
     const [isSaving, setIsSaving] = useState(false);
     const [manualImageUrl, setManualImageUrl] = useState("");
     const [isListOpen, setIsListOpen] = useState(false);
+    const [isSyncingPhotos, setIsSyncingPhotos] = useState(false);
 
     useEffect(() => {
         const passRef = dbRef(db, "admin/password");
@@ -243,6 +244,24 @@ export function AdminPanel({
         const current = editingStore?.genres || [];
         const updated = current.includes(genreId) ? current.filter(id => id !== genreId) : [...current, genreId];
         setEditingStore({ ...editingStore, genres: updated });
+    };
+
+    const handleTriggerPhotoSync = async () => {
+        setIsSyncingPhotos(true);
+        const toastId = toast.loading("Googleマップから最新画像を取得中...");
+        try {
+            const res = await fetch("/api/cron/update-store-photos?force=true&manual=true");
+            const data = await res.json();
+            if (res.ok && data.success) {
+                toast.success(`Google画像の更新が完了しました！（更新: ${data.updatedCount || 0}店舗）`, { id: toastId });
+            } else {
+                toast.error(`エラーが発生しました: ${data.error || "更新失敗"}`, { id: toastId });
+            }
+        } catch (e: any) {
+            toast.error(`通信エラーが発生しました: ${e.message}`, { id: toastId });
+        } finally {
+            setIsSyncingPhotos(false);
+        }
     };
 
     if (!isAuthenticated) {
@@ -583,6 +602,30 @@ export function AdminPanel({
                                             )}
                                             <input type="file" className="hidden" accept="image/*" onChange={handleLogoUpload} disabled={isUploadingLogo} />
                                         </label>
+                                    </div>
+
+                                    <div className="pt-6 border-t border-gray-100 space-y-2">
+                                        <h3 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Google画像 自動更新</h3>
+                                        <p className="text-[10px] text-gray-400 font-bold leading-relaxed">
+                                            Googleマップから最新写真を自動更新します（48時間サイクルで稼働中）。今すぐ手動で更新を反映させることも可能です。
+                                        </p>
+                                        <button
+                                            onClick={handleTriggerPhotoSync}
+                                            disabled={isSyncingPhotos}
+                                            className="w-full py-3.5 rounded-xl bg-pink-50 text-pink-600 border border-pink-200 font-black shadow-sm hover:bg-pink-100 transition-all text-xs flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                                        >
+                                            {isSyncingPhotos ? (
+                                                <>
+                                                    <Loader2 size={16} className="animate-spin" />
+                                                    Google画像を取得中...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <RefreshCw size={16} />
+                                                    Google画像を今すぐ更新
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>
