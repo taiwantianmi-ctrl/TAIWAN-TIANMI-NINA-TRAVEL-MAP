@@ -39,8 +39,8 @@ function getYouTubeId(url?: string): string | null {
   return match && match[2].length === 11 ? match[2] : null;
 }
 
-// Verified working YouTube shorts videos with sound
-const VERIFIED_FALLBACK_VIDEOS = [
+// Fallback YouTube shorts videos in case a store has no videos
+const FALLBACK_VIDEOS = [
   "q89udmofdgo", // ローゼルもパテ・ド・フリュイも知らない (台湾東部 特産品)
   "HTOz-agz2Fo", // ロゼルを宇宙人に例えてゴメン① (台東県農会)
   "RkEXbz9G9IA", // ロゼルを宇宙人に例えてゴメン② (台東県農会)
@@ -57,34 +57,36 @@ export function ShortsReelModal({
   userLocation,
   initialStoreId,
 }: ShortsReelModalProps) {
-  // 1. Build flattened list of videos across all stores with verified valid videos
+  // 1. Build flattened list of videos across all stores
   const rawItems = useMemo<ReelItem[]>(() => {
     const list: ReelItem[] = [];
     stores.forEach((store, sIdx) => {
-      const storeVideos: string[] = [];
+      let storeHasVideo = false;
       if (store.videos && store.videos.length > 0) {
-        store.videos.forEach((vUrl) => {
+        store.videos.forEach((vUrl, vIdx) => {
           const vId = getYouTubeId(vUrl);
-          if (vId && VERIFIED_FALLBACK_VIDEOS.includes(vId)) {
-            storeVideos.push(vId);
+          if (vId) {
+            storeHasVideo = true;
+            list.push({
+              id: `${store.id}-${vId}-${vIdx}`,
+              store,
+              videoId: vId,
+              videoIndex: vIdx,
+            });
           }
         });
       }
 
-      // If store has no verified video, assign one from verified pool
-      if (storeVideos.length === 0) {
-        const fallbackId = VERIFIED_FALLBACK_VIDEOS[sIdx % VERIFIED_FALLBACK_VIDEOS.length];
-        storeVideos.push(fallbackId);
-      }
-
-      storeVideos.forEach((vId, vIdx) => {
+      // If store has no video, assign one from fallback pool
+      if (!storeHasVideo) {
+        const fallbackId = FALLBACK_VIDEOS[sIdx % FALLBACK_VIDEOS.length];
         list.push({
-          id: `${store.id}-${vId}-${vIdx}`,
+          id: `${store.id}-${fallbackId}-0`,
           store,
-          videoId: vId,
-          videoIndex: vIdx,
+          videoId: fallbackId,
+          videoIndex: 0,
         });
-      });
+      }
     });
     return list;
   }, [stores]);
@@ -96,19 +98,8 @@ export function ShortsReelModal({
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const playerRef = useRef<any>(null);
   const isWheelCooling = useRef(false);
   const isDragging = useRef(false);
-
-  // Load YouTube IFrame API script once
-  useEffect(() => {
-    if (typeof window !== "undefined" && !window.YT) {
-      const tag = document.createElement("script");
-      tag.src = "https://www.youtube.com/iframe_api";
-      const firstScriptTag = document.getElementsByTagName("script")[0];
-      firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
-    }
-  }, []);
 
   // Sync items when rawItems changes
   useEffect(() => {
@@ -132,49 +123,7 @@ export function ShortsReelModal({
 
   const currentItem = items[currentIndex];
 
-  // Initialize YT.Player instance when ready
-  const initYTPlayer = useCallback(() => {
-    if (typeof window !== "undefined" && window.YT && window.YT.Player) {
-      try {
-        const iframeId = `yt-player-${currentItem.videoId}`;
-        if (playerRef.current) {
-          try {
-            playerRef.current.destroy();
-          } catch (e) {}
-        }
-        playerRef.current = new window.YT.Player(iframeId, {
-          events: {
-            onReady: (event: any) => {
-              if (!isMuted) {
-                event.target.unMute();
-                event.target.setVolume(100);
-                event.target.playVideo();
-              }
-            },
-            onStateChange: (event: any) => {
-              if (event.data === 1) {
-                setIsPlaying(true);
-                // When video starts playing, ensure unmuted if user enabled sound
-                if (!isMuted) {
-                  try {
-                    event.target.unMute();
-                    event.target.setVolume(100);
-                  } catch (e) {}
-                  postToYouTube("unMute");
-                  postToYouTube("setVolume", [100]);
-                }
-              }
-              if (event.data === 2) setIsPlaying(false);
-            },
-          },
-        });
-      } catch (e) {
-        console.error("YT.Player init error:", e);
-      }
-    }
-  }, [currentItem.videoId, isMuted]);
-
-  // Helper to post command to YouTube iframe safely (as backup protocol)
+  // Helper to post command to YouTube iframe safely
   const postToYouTube = useCallback((func: string, args: (string | number)[] = []) => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
@@ -182,29 +131,11 @@ export function ShortsReelModal({
           JSON.stringify({ event: "command", func, args }),
           "*"
         );
-        iframeRef.current.contentWindow.postMessage(
-          JSON.stringify({ event: "command", func, args: "" }),
-          "*"
-        );
       } catch (e) {
         console.error("Failed to post message to YouTube iframe", e);
       }
     }
   }, []);
-
-  // Hook for when YouTube API becomes ready
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        if (prevCallback) prevCallback();
-        initYTPlayer();
-      };
-      if (window.YT && window.YT.Player) {
-        initYTPlayer();
-      }
-    }
-  }, [initYTPlayer]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
@@ -220,31 +151,16 @@ export function ShortsReelModal({
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
   }, [items.length]);
 
-  // Audio Toggle with both official YT.Player API AND postMessage
+  // Audio Toggle with YouTube IFrame API via postMessage
   const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
-
-      // 1. Official YT.Player API call
-      if (playerRef.current) {
-        try {
-          if (next) {
-            playerRef.current.mute();
-          } else {
-            playerRef.current.unMute();
-            playerRef.current.setVolume(100);
-            playerRef.current.playVideo();
-          }
-        } catch (e) {
-          console.error("playerRef method call error", e);
-        }
-      }
-
-      // 2. Direct postMessage backup
-      postToYouTube(next ? "mute" : "unMute");
-      if (!next) {
+      if (next) {
+        postToYouTube("mute", []);
+      } else {
+        postToYouTube("unMute", []);
         postToYouTube("setVolume", [100]);
-        postToYouTube("playVideo");
+        postToYouTube("playVideo", []);
       }
 
       toast.success(next ? "音声をミュートしました" : "音声をオンにしました", {
@@ -264,19 +180,10 @@ export function ShortsReelModal({
   const handleTogglePlay = useCallback(() => {
     setIsPlaying((prev) => {
       const next = !prev;
-      if (playerRef.current) {
-        try {
-          if (next) {
-            playerRef.current.playVideo();
-          } else {
-            playerRef.current.pauseVideo();
-          }
-        } catch (e) {}
-      }
       if (next) {
-        postToYouTube("playVideo");
+        postToYouTube("playVideo", []);
       } else {
-        postToYouTube("pauseVideo");
+        postToYouTube("pauseVideo", []);
       }
       return next;
     });
@@ -284,7 +191,6 @@ export function ShortsReelModal({
 
   // When changing video, keep unmuted if user enabled sound
   const handleIframeLoad = useCallback(() => {
-    initYTPlayer();
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
         iframeRef.current.contentWindow.postMessage(
@@ -295,19 +201,12 @@ export function ShortsReelModal({
     }
     if (!isMuted) {
       setTimeout(() => {
-        if (playerRef.current) {
-          try {
-            playerRef.current.unMute();
-            playerRef.current.setVolume(100);
-            playerRef.current.playVideo();
-          } catch (e) {}
-        }
-        postToYouTube("unMute");
+        postToYouTube("unMute", []);
         postToYouTube("setVolume", [100]);
-        postToYouTube("playVideo");
+        postToYouTube("playVideo", []);
       }, 500);
     }
-  }, [initYTPlayer, isMuted, postToYouTube]);
+  }, [isMuted, postToYouTube]);
 
   // Listen to YouTube player state changes
   useEffect(() => {
@@ -534,14 +433,10 @@ export function ShortsReelModal({
               className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto cursor-pointer"
             >
               <iframe
-                id={`yt-player-${currentItem.videoId}`}
+                id={`yt-player-${currentItem.id}`}
                 ref={iframeRef}
-                key={currentItem.videoId}
-                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=1&controls=1&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1${
-                  typeof window !== "undefined" && window.location.origin
-                    ? `&origin=${encodeURIComponent(window.location.origin)}`
-                    : ""
-                }`}
+                key={currentItem.id}
+                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=1&controls=1&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1`}
                 onLoad={handleIframeLoad}
                 className="w-full h-full object-cover border-0 pointer-events-auto"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -555,6 +450,8 @@ export function ShortsReelModal({
                     initial={{ opacity: 0, y: -15, scale: 0.9 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -15, scale: 0.9 }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    onTouchStart={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       handleToggleMute();
@@ -583,22 +480,36 @@ export function ShortsReelModal({
             </div>
 
             {/* Right Action Bar (TikTok Style) - Raised up to prevent overlapping with bottom store card */}
-            <div className="absolute right-3 bottom-[160px] md:bottom-[150px] z-20 flex flex-col items-center gap-2.5 md:gap-3 pointer-events-auto">
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute right-3 bottom-[160px] md:bottom-[150px] z-20 flex flex-col items-center gap-2.5 md:gap-3 pointer-events-auto"
+            >
               {/* Prev Video Button - Spaced out from store action buttons */}
               <button
-                onClick={handlePrev}
-                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer mb-2 md:mb-3"
-                title="前の動画"
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePrev();
+                }}
+                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer mb-3 md:mb-4"
+                title="前の動画 (↑)"
               >
                 <ChevronUp size={22} strokeWidth={2.5} />
               </button>
 
               {/* Subtle visual separator */}
-              <div className="w-4 h-[1px] bg-white/20 mb-1" />
+              <div className="w-5 h-[1.5px] bg-white/25 mb-1.5 md:mb-2" />
 
               {/* Favorite Button */}
               <button
-                onClick={() => onToggleStat("favorites", store.id)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleStat("favorites", store.id);
+                }}
                 className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="御用達店に登録"
               >
@@ -618,7 +529,12 @@ export function ShortsReelModal({
 
               {/* Visited / Wishlist Button */}
               <button
-                onClick={() => onToggleStat("visited", store.id)}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleStat("visited", store.id);
+                }}
                 className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="行ってみたいリストに登録"
               >
@@ -638,7 +554,10 @@ export function ShortsReelModal({
 
               {/* View on Map Button */}
               <button
-                onClick={() => {
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
                   onViewOnMap(store);
                   onClose();
                 }}
@@ -653,7 +572,12 @@ export function ShortsReelModal({
 
               {/* Share Button */}
               <button
-                onClick={handleShare}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleShare();
+                }}
                 className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="お店をシェア"
               >
@@ -664,20 +588,29 @@ export function ShortsReelModal({
               </button>
 
               {/* Subtle visual separator */}
-              <div className="w-4 h-[1px] bg-white/20 mt-1" />
+              <div className="w-5 h-[1.5px] bg-white/25 mt-1.5 md:mt-2" />
 
               {/* Next Video Button - Spaced out from store action buttons */}
               <button
-                onClick={handleNext}
-                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer mt-2 md:mt-3"
-                title="次の動画"
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleNext();
+                }}
+                className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer mt-3 md:mt-4"
+                title="次の動画 (↓)"
               >
                 <ChevronDown size={22} strokeWidth={2.5} />
               </button>
             </div>
 
             {/* Bottom Store Info Card Overlay - Well clear of the raised action buttons */}
-            <div className="absolute bottom-0 inset-x-0 z-20 p-4 pb-5 bg-gradient-to-t from-black/95 via-black/75 to-transparent pointer-events-auto">
+            <div
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="absolute bottom-0 inset-x-0 z-20 p-4 pb-5 bg-gradient-to-t from-black/95 via-black/75 to-transparent pointer-events-auto"
+            >
               <div className="space-y-2">
                 {/* Badges: Genre & Distance */}
                 <div className="flex items-center gap-2 flex-wrap">
