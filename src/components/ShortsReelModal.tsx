@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Store, Genre, UserStats } from "@/types";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { X, Heart, CheckCircle, MapPin, Share2, Volume2, VolumeX, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Shuffle, ExternalLink } from "lucide-react";
+import { X, Heart, CheckCircle, MapPin, Share2, Volume2, VolumeX, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Shuffle, ExternalLink, Play, Pause } from "lucide-react";
 import { calculateDistance, formatDistance } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
@@ -69,8 +69,10 @@ export function ShortsReelModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isMuted, setIsMuted] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const isWheelCooling = useRef(false);
+  const isDragging = useRef(false);
 
   // Sync items when rawItems changes
   useEffect(() => {
@@ -94,42 +96,46 @@ export function ShortsReelModal({
 
   const currentItem = items[currentIndex];
 
+  // Helper to post command to YouTube iframe safely
+  const postToYouTube = useCallback((func: string, args: (string | number)[] = []) => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args }),
+          "*"
+        );
+      } catch (e) {
+        console.error("Failed to post message to YouTube iframe", e);
+      }
+    }
+  }, []);
+
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
     setDirection(1);
+    setIsPlaying(true);
     setCurrentIndex((prev) => (prev < items.length - 1 ? prev + 1 : 0));
   }, [items.length]);
 
   const handlePrev = useCallback(() => {
     if (items.length <= 1) return;
     setDirection(-1);
+    setIsPlaying(true);
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
   }, [items.length]);
 
-  // Audio Toggle with YouTube IFrame API via postMessage
+  // Audio Toggle with YouTube IFrame API via postMessage (NEVER reload iframe)
   const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
-      if (iframeRef.current && iframeRef.current.contentWindow) {
-        try {
-          const command = next ? "mute" : "unMute";
-          iframeRef.current.contentWindow.postMessage(
-            JSON.stringify({ event: "command", func: command, args: [] }),
-            "*"
-          );
-          if (!next) {
-            iframeRef.current.contentWindow.postMessage(
-              JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
-              "*"
-            );
-            iframeRef.current.contentWindow.postMessage(
-              JSON.stringify({ event: "command", func: "playVideo", args: [] }),
-              "*"
-            );
-          }
-        } catch (e) {
-          console.error("Failed to post message to youtube iframe", e);
-        }
+      if (next) {
+        // Mute
+        postToYouTube("mute");
+      } else {
+        // Unmute and ensure playback continues smoothly
+        postToYouTube("unMute");
+        postToYouTube("setVolume", [100]);
+        postToYouTube("playVideo");
       }
       toast.success(next ? "音声をミュートしました" : "音声をオンにしました", {
         icon: next ? "🔇" : "🔊",
@@ -142,26 +148,59 @@ export function ShortsReelModal({
       });
       return next;
     });
-  }, []);
+  }, [postToYouTube]);
+
+  // Play / Pause Toggle
+  const handleTogglePlay = useCallback(() => {
+    setIsPlaying((prev) => {
+      const next = !prev;
+      if (next) {
+        postToYouTube("playVideo");
+      } else {
+        postToYouTube("pauseVideo");
+      }
+      return next;
+    });
+  }, [postToYouTube]);
 
   // When changing video, keep unmuted if user enabled sound
-  useEffect(() => {
-    if (!isMuted && iframeRef.current && iframeRef.current.contentWindow) {
-      const timer = setTimeout(() => {
-        try {
-          iframeRef.current?.contentWindow?.postMessage(
-            JSON.stringify({ event: "command", func: "unMute", args: [] }),
-            "*"
-          );
-          iframeRef.current?.contentWindow?.postMessage(
-            JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
-            "*"
-          );
-        } catch (e) {}
-      }, 700);
-      return () => clearTimeout(timer);
+  const handleIframeLoad = useCallback(() => {
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      try {
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "listening" }),
+          "*"
+        );
+      } catch (e) {}
     }
-  }, [currentIndex, isMuted]);
+    if (!isMuted) {
+      setTimeout(() => {
+        postToYouTube("unMute");
+        postToYouTube("setVolume", [100]);
+        postToYouTube("playVideo");
+      }, 500);
+    }
+  }, [isMuted, postToYouTube]);
+
+  // Listen to YouTube player state changes
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      try {
+        if (typeof e.data === "string") {
+          const data = JSON.parse(e.data);
+          if (data.event === "onStateChange") {
+            if (data.info === 1) setIsPlaying(true);
+            if (data.info === 2) setIsPlaying(false);
+          } else if (data.event === "infoDelivery" && data.info) {
+            if (data.info.playerState === 1) setIsPlaying(true);
+            if (data.info.playerState === 2) setIsPlaying(false);
+          }
+        }
+      } catch (err) {}
+    };
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
 
   const handleShuffleToggle = () => {
     setIsShuffled((prev) => !prev);
@@ -347,21 +386,53 @@ export function ShortsReelModal({
             drag="y"
             dragConstraints={{ top: 0, bottom: 0 }}
             dragElastic={0.25}
-            onDragEnd={handleDragEnd}
+            onDragStart={() => {
+              isDragging.current = true;
+            }}
+            onDragEnd={(e, info) => {
+              setTimeout(() => {
+                isDragging.current = false;
+              }, 150);
+              handleDragEnd(e, info);
+            }}
             className="absolute inset-0 w-full h-full flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing"
           >
             {/* Embedded YouTube Player (enablejsapi=1 for postMessage audio control) */}
-            <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto">
+            <div
+              onClick={() => {
+                if (!isDragging.current) {
+                  handleTogglePlay();
+                }
+              }}
+              className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto cursor-pointer"
+            >
               <iframe
                 ref={iframeRef}
                 key={currentItem.videoId}
-                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=${
-                  isMuted ? 1 : 0
-                }&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`}
+                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1${
+                  typeof window !== "undefined" && window.location.origin
+                    ? `&origin=${encodeURIComponent(window.location.origin)}`
+                    : ""
+                }`}
+                onLoad={handleIframeLoad}
                 className="w-full h-full object-cover border-0 pointer-events-none"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+
+              {/* Pause Overlay indicator */}
+              <AnimatePresence>
+                {!isPlaying && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    className="absolute inset-0 m-auto w-16 h-16 md:w-20 md:h-20 rounded-full bg-black/60 backdrop-blur-md border border-white/30 flex items-center justify-center text-white shadow-2xl pointer-events-none z-10"
+                  >
+                    <Play size={32} fill="white" className="ml-1" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Right Action Bar (TikTok Style) - Raised up to prevent overlapping with bottom store card */}
