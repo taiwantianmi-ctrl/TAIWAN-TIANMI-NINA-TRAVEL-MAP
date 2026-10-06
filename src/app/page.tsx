@@ -20,6 +20,7 @@ export default function Home() {
   const [selectedGenreIds, setSelectedGenreIds] = useState<string[]>([]);
   const [selectedAreaId, setSelectedAreaId] = useState<string>("all");
   const [showOnlyVisited, setShowOnlyVisited] = useState(false);
+  const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [userStats, setUserStats] = useState<UserStats>({ visited: [], favorites: [] });
   const [editingStore, setEditingStore] = useState<Partial<Store> | null>(null);
   const [googlePhotos, setGooglePhotos] = useState<string[]>([]);
@@ -156,10 +157,12 @@ export default function Home() {
     setSelectedGenreIds([]);
     setSelectedAreaId("all");
     setShowOnlyVisited(false);
+    setShowOnlyFavorites(false);
     setSelectedStore(null);
     setShowAdmin(false);
     setEditingStore(null);
     setShowGenreFilter(false);
+    setShowAreaFilter(false);
     setSearchQuery("");
   };
 
@@ -172,6 +175,9 @@ export default function Home() {
   }
   if (showOnlyVisited) {
     filteredStores = filteredStores.filter(store => userStats.visited.includes(store.id));
+  }
+  if (showOnlyFavorites) {
+    filteredStores = filteredStores.filter(store => userStats.favorites.includes(store.id));
   }
   if (searchQuery.trim() !== "") {
     const q = searchQuery.toLowerCase().trim();
@@ -200,180 +206,68 @@ export default function Home() {
 
   const [showAreaFilter, setShowAreaFilter] = useState(false);
 
-  // Common Area Filter UI component (Map/Travel Theme - Orange & Capsule Buttons)
-  const AreaFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
+  // Mobile Area Filter Drawer
+  const AreaFilterUI = () => (
     <motion.div
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className={`bg-[#FDF8F5] rounded-[2rem] border-2 border-[#FFE8DF]/60 shadow-[0_8px_20px_rgba(251,146,60,0.04)] overflow-hidden ${isPC ? 'h-full' : ''}`}
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="bg-[#FDF8F5] rounded-2xl border border-[#FFE8DF] shadow-md overflow-hidden"
     >
-      <div className="h-full flex items-center p-3 md:px-6 gap-4">
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="w-10 h-10 bg-orange-500 text-white rounded-full flex items-center justify-center shadow-md shadow-orange-100">
-            <MapPin size={18} />
-          </div>
-          <div className="text-left hidden lg:block">
-            <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest leading-none mb-1">Area Filter</p>
-            <p className="text-[10px] font-black text-[#8C6D62]">地域を選択</p>
-          </div>
-        </div>
-
-        <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
-          {AREAS.map(area => (
-            <button
-              key={area.id}
-              onClick={() => setSelectedAreaId(area.id)}
-              className={`px-4 py-2 rounded-full text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
-                selectedAreaId === area.id 
-                  ? "bg-orange-500 text-white border-orange-500 shadow-md shadow-orange-100 hover:opacity-95" 
-                  : "bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50"
-              }`}
-            >
-              {area.name}
-            </button>
-          ))}
-        </div>
+      <div className="p-3 flex flex-wrap gap-1.5 max-h-[40vh] overflow-y-auto scrollbar-none">
+        {AREAS.map(area => (
+          <button
+            key={area.id}
+            onClick={() => {
+              setSelectedAreaId(area.id);
+              setShowAreaFilter(false);
+            }}
+            className={`px-3 py-1.5 rounded-full text-[11px] font-black transition-all cursor-pointer ${
+              selectedAreaId === area.id 
+                ? "bg-orange-500 text-white shadow-sm" 
+                : "bg-white text-[#5D4037] hover:bg-orange-50 border border-orange-100"
+            }`}
+          >
+            {area.name}
+          </button>
+        ))}
       </div>
     </motion.div>
   );
 
-  // Common Genre Filter UI component to be reused (Sweet/Pastry Theme - Pink & Soft Square Buttons)
-  const GenreFilterUI = ({ isPC = false }: { isPC?: boolean }) => (
+  // Mobile Genre Filter Drawer
+  const GenreFilterUI = () => (
     <motion.div
-      initial={{ y: -20, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      className={`bg-[#FFF9FA] rounded-[2rem] border-2 border-[#FFE4E8]/60 shadow-[0_8px_20px_rgba(244,63,94,0.04)] overflow-hidden ${isPC ? 'h-full' : ''}`}
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="bg-[#FFF9FA] rounded-2xl border border-[#FFE4E8] shadow-md overflow-hidden"
     >
-      {isPC ? (
-        <div className="h-full flex items-center p-3 md:px-6 gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-10 h-10 bg-pink-500 text-white rounded-2xl flex items-center justify-center shadow-md shadow-pink-100">
-              <LayoutGrid size={18} />
-            </div>
-            <div className="text-left hidden lg:block">
-              <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-              <p className="text-[10px] font-black text-[#8C6D62]">マルチ選択可</p>
-            </div>
-          </div>
-
-          <div className="flex-1 flex flex-wrap gap-1.5 overflow-y-auto max-h-[85px] scrollbar-none py-1">
-            <button
-              onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); }}
-              className={`px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
-                selectedGenreIds.length === 0 && !showOnlyVisited 
-                  ? "bg-sweet-brown text-white border-sweet-brown shadow-md" 
-                  : "bg-white text-sweet-brown hover:bg-gray-50 border-gray-100"
-              }`}
-            >
-              すべて
-            </button>
-            <button
-              onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
-                showOnlyVisited 
-                  ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" 
-                  : "bg-white text-orange-500 hover:bg-orange-50 border-orange-100"
-              }`}
-            >
-              <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
-              行ってみたい！
-            </button>
-            {genres.map(genre => (
-              <button
-                key={genre.id}
-                onClick={() => toggleFilterGenre(genre.id)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-[10px] font-black transition-all shadow-sm border cursor-pointer ${
-                  selectedGenreIds.includes(genre.id) 
-                    ? "bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-100" 
-                    : "bg-white text-sweet-brown hover:bg-pink-50/30 border-[#FFE4E8]/50"
-                }`}
-              >
-                <div
-                  style={{ backgroundColor: genre.color || "#ffffff" }}
-                  className="w-4 h-4 rounded-lg flex items-center justify-center text-[10px] shadow-sm border border-white/20"
-                >
-                  {genre.iconUrl}
-                </div>
-                {genre.nameJP}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Toggle Button for Mobile */}
+      <div className="p-3 flex flex-wrap gap-1.5 max-h-[40vh] overflow-y-auto scrollbar-none">
+        <button
+          onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); setShowGenreFilter(false); }}
+          className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white" : "bg-white text-sweet-brown hover:bg-gray-100 border border-gray-100"}`}
+        >
+          すべて表示
+        </button>
+        <button
+          onClick={() => setShowOnlyVisited(!showOnlyVisited)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all border cursor-pointer ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 shadow-sm" : "bg-white text-orange-500 hover:bg-orange-50 border-orange-100"}`}
+        >
+          <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
+          行ってみたい！
+        </button>
+        {genres.map(genre => (
           <button
-            onClick={() => setShowGenreFilter(!showGenreFilter)}
-            className="w-full flex items-center justify-between px-4 py-3 md:py-4 text-sweet-brown hover:bg-gray-50/10 transition-colors cursor-pointer"
+            key={genre.id}
+            onClick={() => toggleFilterGenre(genre.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-black transition-all cursor-pointer ${selectedGenreIds.includes(genre.id) ? "bg-pink-500 text-white shadow-sm" : "bg-white text-sweet-brown hover:bg-pink-50 border border-pink-100/50"}`}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-pink-500 text-white rounded-2xl flex items-center justify-center shadow-md">
-                <LayoutGrid size={18} />
-              </div>
-              <div className="text-left">
-                <p className="text-[10px] font-black text-pink-500 uppercase tracking-widest leading-none mb-1">Genre Filter</p>
-                <p className="text-xs md:text-sm font-black tracking-tighter truncate max-w-[150px] md:max-w-md text-[#5D4037]">
-                  {selectedGenreIds.length > 0
-                    ? `${genres.filter(g => selectedGenreIds.includes(g.id)).map(g => g.nameJP).join(", ")}`
-                    : "すべてのジャンル"}
-                </p>
-              </div>
-            </div>
-            <motion.div
-              animate={{ rotate: showGenreFilter ? 90 : -90 }}
-              transition={{ duration: 0.3 }}
-              className="text-gray-300"
-            >
-              <ChevronLeft size={20} />
-            </motion.div>
+            <span>{genre.iconUrl}</span>
+            <span>{genre.nameJP}</span>
           </button>
-
-          {/* Expandable Content Layer */}
-          <AnimatePresence>
-            {showGenreFilter && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                className="overflow-hidden"
-              >
-                <div className="p-3 md:p-4 border-t border-pink-100/30 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
-                  <button
-                    onClick={() => { setSelectedGenreIds([]); setShowOnlyVisited(false); setShowGenreFilter(false); }}
-                    className={`px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm cursor-pointer ${selectedGenreIds.length === 0 && !showOnlyVisited ? "bg-sweet-brown text-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
-                  >
-                    すべて表示
-                  </button>
-                  <button
-                    onClick={() => setShowOnlyVisited(!showOnlyVisited)}
-                    className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm border cursor-pointer ${showOnlyVisited ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200" : "bg-gray-50 text-orange-500 hover:bg-orange-50 border-orange-100"}`}
-                  >
-                    <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
-                    行ってみたい！
-                  </button>
-                  {genres.map(genre => (
-                    <button
-                      key={genre.id}
-                      onClick={() => {
-                        toggleFilterGenre(genre.id);
-                      }}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-[10px] md:text-xs font-black transition-all shadow-sm cursor-pointer ${selectedGenreIds.includes(genre.id) ? "bg-pink-500 text-white ring-2 ring-white" : "bg-gray-50 text-sweet-brown hover:bg-gray-100"}`}
-                    >
-                      <div
-                        style={{ backgroundColor: genre.color || "#ffffff" }}
-                        className="w-4 h-4 rounded-lg flex items-center justify-center text-[10px] shadow-sm border border-white/20"
-                      >
-                        {genre.iconUrl}
-                      </div>
-                      {genre.nameJP}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
-      )}
+        ))}
+      </div>
     </motion.div>
   );
 
@@ -428,98 +322,182 @@ export default function Home() {
 
   return (
     <main className="relative h-screen w-full overflow-hidden bg-white flex flex-col">
-      {/* Top Floating Controls */}
-      <div className={`relative z-40 bg-white border-b border-gray-100 shadow-sm transition-all duration-300 ${isMobile ? 'p-3' : 'p-2 md:p-4'}`}>
+      {/* Top Controls Bar */}
+      <div className={`relative z-40 bg-white border-b border-gray-100 shadow-sm transition-all duration-300 ${isMobile ? 'p-3' : 'px-5 py-2.5'}`}>
+        {/* Row 1: Logo, Title, Search, and Action Controls */}
         <div className="w-full flex items-center justify-between gap-4">
           {/* Left: Title & Logo */}
           <div 
-            className="flex items-center gap-2 md:gap-4 pointer-events-auto cursor-pointer min-w-0 shrink-0"
+            className="flex items-center gap-3 pointer-events-auto cursor-pointer min-w-0 shrink-0"
             onClick={resetApp}
           >
-            <div className={`bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden shrink-0 flex items-center justify-center ${isMobile ? 'w-10 h-10' : 'w-24 h-24 md:w-28 md:h-28'}`}>
+            <div className={`bg-white rounded-xl shadow-sm border border-pink-100 overflow-hidden shrink-0 flex items-center justify-center ${isMobile ? 'w-10 h-10' : 'w-11 h-11'}`}>
               <img src="/logo.png" alt="Shop Logo" className="w-full h-full object-contain" />
             </div>
             <div className="min-w-0">
-              <h1 className={`font-black text-sweet-brown tracking-tighter leading-tight truncate ${isMobile ? 'text-sm' : 'text-lg md:text-xl'}`}>
+              <h1 className={`font-black text-sweet-brown tracking-tighter leading-tight truncate ${isMobile ? 'text-sm' : 'text-base font-black'}`}>
                 ニーナの「台湾甜蜜」マップ
               </h1>
-              <p className={`font-bold text-pink-400 uppercase tracking-widest truncate ${isMobile ? 'text-[8px]' : 'text-[10px] md:text-[10px]'}`}>
+              <p className={`font-bold text-pink-400 uppercase tracking-widest truncate ${isMobile ? 'text-[8px]' : 'text-[9px]'}`}>
                 Nina's Taiwan sweets journey
               </p>
             </div>
           </div>
 
-          {/* Right: 2-row Controls (Desktop Only) */}
+          {/* Center (PC Only): Search Bar */}
           {!isMobile && (
-            <div className="flex flex-col items-end gap-3 shrink-0">
-              {/* Row 1: Search Bar & Share Button */}
-              <div className="flex items-center gap-3">
-                {/* Search Bar */}
-                <div className="w-80 relative">
-                  <div className="relative flex items-center">
-                    <input
-                      type="text"
-                      placeholder="店名、お菓子、説明、住所から検索..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-10 py-2 rounded-full border border-pink-100 bg-[#FFFDFD] focus:bg-white text-xs font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
-                    />
-                    <div className="absolute left-3.5 text-pink-300 pointer-events-none">
-                      <Search size={16} />
-                    </div>
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery("")}
-                        className="absolute right-3.5 text-pink-300 hover:text-pink-500 cursor-pointer"
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
+            <div className="flex-1 max-w-sm relative mx-2">
+              <div className="relative flex items-center">
+                <input
+                  type="text"
+                  placeholder="店名、お菓子、説明、住所から検索..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9 pr-9 py-1.5 rounded-full border border-pink-100 bg-[#FFFDFD] focus:bg-white text-xs font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner h-9"
+                />
+                <div className="absolute left-3 text-pink-300 pointer-events-none">
+                  <Search size={14} />
                 </div>
-
-                {/* Reel Mode Button */}
-                <button
-                  onClick={() => setShowReelModal(true)}
-                  className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white px-4 py-2 rounded-full shadow-md flex items-center gap-1.5 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-[38px] shadow-pink-200/50"
-                  title="ショート動画で店舗を次々巡る"
-                >
-                  <span className="text-sm">🎬</span>
-                  <span>動画で巡る</span>
-                </button>
-
-                {/* Share Button */}
-                <button
-                  onClick={handleShareList}
-                  className="bg-gradient-to-r from-pink-400 to-orange-400 hover:from-pink-500 hover:to-orange-500 text-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-[38px]"
-                >
-                  <Share2 size={14} />
-                  <span>リストを共有</span>
-                </button>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 text-pink-300 hover:text-pink-500 cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
+            </div>
+          )}
 
-              {/* Row 2: Statistics */}
-              <div className="flex items-center gap-2">
-                <div className="bg-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black text-pink-500 border border-pink-100">
-                  <Heart size={14} fill="currentColor" />
-                  <span>ワタシの御用達店</span>
-                  <span className="ml-0.5 bg-pink-50 px-2 py-0.5 rounded-full">{userStats.favorites.length}</span>
-                </div>
-                <div className="bg-white px-4 py-2 rounded-full shadow-md flex items-center gap-2 text-xs font-black text-orange-600 border border-orange-100">
-                  <div className="w-4 h-4 bg-orange-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">✓</div>
-                  <span>行ってみたい！</span>
-                  <span className="ml-0.5 bg-orange-50 px-2 py-0.5 rounded-full">{userStats.visited.length}</span>
-                </div>
-              </div>
+          {/* Right Controls (Desktop Only) */}
+          {!isMobile && (
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Reel Mode Button */}
+              <button
+                onClick={() => setShowReelModal(true)}
+                className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 hover:opacity-95 text-white px-3.5 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-9 shadow-pink-200/50"
+                title="ショート動画で店舗を次々巡る"
+              >
+                <span className="text-sm">🎬</span>
+                <span>動画で巡る</span>
+              </button>
+
+              {/* Favorites Filter / Counter Badge */}
+              <button
+                onClick={() => setShowOnlyFavorites(!showOnlyFavorites)}
+                className={`px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 text-xs font-black border transition-all cursor-pointer h-9 ${
+                  showOnlyFavorites 
+                    ? "bg-pink-500 text-white border-pink-500 ring-2 ring-pink-200 shadow-pink-100" 
+                    : "bg-white text-pink-500 hover:bg-pink-50/50 border-pink-100"
+                }`}
+                title="御用達店のみ表示"
+              >
+                <Heart size={14} fill={showOnlyFavorites ? "currentColor" : "none"} />
+                <span>御用達店</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${showOnlyFavorites ? "bg-white/20 text-white" : "bg-pink-50 text-pink-500"}`}>
+                  {userStats.favorites.length}
+                </span>
+              </button>
+
+              {/* Wishlist Filter / Counter Badge */}
+              <button
+                onClick={() => setShowOnlyVisited(!showOnlyVisited)}
+                className={`px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 text-xs font-black border transition-all cursor-pointer h-9 ${
+                  showOnlyVisited 
+                    ? "bg-orange-500 text-white border-orange-500 ring-2 ring-orange-200 shadow-orange-100" 
+                    : "bg-white text-orange-600 hover:bg-orange-50/50 border-orange-100"
+                }`}
+                title="行ってみたい店舗のみ表示"
+              >
+                <div className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] font-bold ${showOnlyVisited ? "bg-white text-orange-500" : "bg-orange-500 text-white"}`}>✓</div>
+                <span>行ってみたい！</span>
+                <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${showOnlyVisited ? "bg-white/20 text-white" : "bg-orange-50 text-orange-600"}`}>
+                  {userStats.visited.length}
+                </span>
+              </button>
+
+              {/* Share List Button */}
+              <button
+                onClick={handleShareList}
+                className="bg-white hover:bg-gray-50 text-sweet-brown border border-gray-200 px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-9"
+                title="リストを共有"
+              >
+                <Share2 size={13} className="text-pink-400" />
+                <span>共有</span>
+              </button>
             </div>
           )}
         </div>
 
-        {/* Middle: Area & Genre Filter - PC */}
+        {/* Row 2: Compact Inline Filter Bar (Desktop Only) */}
         {!isMobile && (
-          <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4 pointer-events-auto">
-            <AreaFilterUI isPC={true} />
-            <GenreFilterUI isPC={true} />
+          <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between gap-4 pointer-events-auto">
+            {/* Area Filter Pills */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1 text-orange-500 font-black text-[11px] shrink-0">
+                <MapPin size={13} />
+                <span>エリア:</span>
+              </div>
+              <div 
+                className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                {AREAS.map(area => (
+                  <button
+                    key={area.id}
+                    onClick={() => setSelectedAreaId(area.id)}
+                    className={`px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                      selectedAreaId === area.id
+                        ? "bg-orange-500 text-white shadow-sm shadow-orange-200"
+                        : "bg-orange-50/60 text-[#8C6D62] hover:bg-orange-100/60"
+                    }`}
+                  >
+                    {area.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="h-4 w-px bg-gray-200 shrink-0" />
+
+            {/* Genre Filter Pills */}
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-1 text-pink-500 font-black text-[11px] shrink-0">
+                <LayoutGrid size={13} />
+                <span>ジャンル:</span>
+              </div>
+              <div 
+                className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              >
+                <button
+                  onClick={() => setSelectedGenreIds([])}
+                  className={`px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                    selectedGenreIds.length === 0
+                      ? "bg-sweet-brown text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  すべて
+                </button>
+                {genres.map(genre => (
+                  <button
+                    key={genre.id}
+                    onClick={() => toggleFilterGenre(genre.id)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                      selectedGenreIds.includes(genre.id)
+                        ? "bg-pink-500 text-white shadow-sm shadow-pink-200"
+                        : "bg-pink-50/60 text-[#8C6D62] hover:bg-pink-100/60"
+                    }`}
+                  >
+                    <span>{genre.iconUrl}</span>
+                    <span>{genre.nameJP}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -531,7 +509,7 @@ export default function Home() {
               placeholder="店名、お菓子、説明、住所から検索..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-9 py-2.5 rounded-xl border border-pink-100 bg-[#FFFDFD] text-[11px] font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-1 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
+              className="w-full pl-9 pr-9 py-2 rounded-xl border border-pink-100 bg-[#FFFDFD] text-[11px] font-bold text-sweet-brown placeholder-pink-300 focus:outline-none focus:ring-1 focus:ring-pink-300 focus:border-transparent transition-all shadow-inner"
             />
             <div className="absolute left-3 top-1/2 -translate-y-1/2 text-pink-300 pointer-events-none">
               <Search size={14} />
@@ -549,55 +527,36 @@ export default function Home() {
 
         {/* Area Filter Bar - Mobile Position (Drawer Pop) */}
         {isMobile && showAreaFilter && (
-          <div className="w-full px-2 mt-2">
-            <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: "auto", opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="bg-[#FDF8F5] rounded-[2rem] border-2 border-[#FFE8DF]/60 shadow-sm overflow-hidden"
-            >
-              <div className="p-3 border-t border-[#FFE8DF]/30 flex flex-wrap gap-2 max-h-[40vh] overflow-y-auto scrollbar-none">
-                {AREAS.map(area => (
-                  <button
-                    key={area.id}
-                    onClick={() => {
-                      setSelectedAreaId(area.id);
-                      setShowAreaFilter(false);
-                    }}
-                    className={`px-4 py-2 rounded-full text-[10px] font-black transition-all shadow-sm cursor-pointer ${
-                      selectedAreaId === area.id 
-                        ? "bg-orange-500 text-white shadow-md shadow-orange-100" 
-                        : "bg-white text-[#5D4037] hover:bg-orange-50/50 border-[#FFE8DF]/50"
-                    }`}
-                  >
-                    {area.name}
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+          <div className="w-full px-1 mt-2">
+            <AreaFilterUI />
           </div>
         )}
 
         {/* Genre Filter Bar - Mobile Position (Drawer Pop) */}
         {isMobile && showGenreFilter && (
-          <div className="w-full px-2 mt-2">
+          <div className="w-full px-1 mt-2">
             <GenreFilterUI />
           </div>
         )}
 
         {/* Mobile Header Buttons */}
         {isMobile && (
-          <div className="flex items-center gap-2 mt-2 pt-2 border-t border-gray-100 overflow-x-auto scrollbar-none pb-1 pointer-events-auto">
+          <div 
+            className="flex items-center gap-1.5 mt-2 pt-2 border-t border-gray-100 overflow-x-auto scrollbar-none pb-0.5 pointer-events-auto [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
             <button
               onClick={() => {
                 setShowAreaFilter(!showAreaFilter);
                 setShowGenreFilter(false);
                 setBottomSheetState("collapsed");
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showAreaFilter ? 'bg-orange-400 text-white border-orange-400 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${
+                showAreaFilter ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-orange-50/60 text-[#8C6D62] border-orange-100/60'
+              }`}
             >
               <MapPin size={12} />
-              <span>エリア</span>
+              <span>エリア{selectedAreaId !== "all" ? ` (${AREAS.find(a=>a.id===selectedAreaId)?.name.split('・')[0]})` : ""}</span>
             </button>
 
             <button
@@ -606,10 +565,12 @@ export default function Home() {
                 setShowAreaFilter(false);
                 setBottomSheetState("collapsed");
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${showGenreFilter ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${
+                showGenreFilter ? 'bg-pink-500 text-white border-pink-500 shadow-pink-100' : 'bg-pink-50/60 text-[#8C6D62] border-pink-100/60'
+              }`}
             >
               <LayoutGrid size={12} />
-              <span>ジャンル</span>
+              <span>ジャンル{selectedGenreIds.length > 0 ? ` (${selectedGenreIds.length})` : ""}</span>
             </button>
 
             {/* Reel Mode Mobile Button */}
@@ -620,7 +581,7 @@ export default function Home() {
                 setShowAreaFilter(false);
                 setBottomSheetState("collapsed");
               }}
-              className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-md border shrink-0 cursor-pointer bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 text-white border-transparent shadow-pink-200/50 hover:scale-105 active:scale-95"
+              className="flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[11px] font-black transition-all shadow-md shrink-0 cursor-pointer bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 text-white shadow-pink-200/50 hover:scale-105 active:scale-95"
             >
               <span>🎬</span>
               <span>動画</span>
@@ -633,7 +594,9 @@ export default function Home() {
                 setShowGenreFilter(false);
                 setShowAreaFilter(false);
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-400 text-white border-pink-400 shadow-pink-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${
+                bottomSheetState !== "collapsed" && activeTab === "favorites" ? 'bg-pink-500 text-white border-pink-500 shadow-pink-100' : 'bg-gray-50 text-gray-600 border-gray-100'
+              }`}
             >
               <Heart size={12} fill={bottomSheetState !== "collapsed" && activeTab === "favorites" ? "currentColor" : "none"} />
               <span>お気に入り ({userStats.favorites.length})</span>
@@ -646,15 +609,17 @@ export default function Home() {
                 setShowGenreFilter(false);
                 setShowAreaFilter(false);
               }}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-500 border-gray-100'}`}
+              className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all shadow-sm border shrink-0 cursor-pointer ${
+                bottomSheetState !== "collapsed" && activeTab === "visited" ? 'bg-orange-500 text-white border-orange-500 shadow-orange-100' : 'bg-gray-50 text-gray-600 border-gray-100'
+              }`}
             >
               <CheckCircle size={12} />
-              <span>行ってみたい ({userStats.visited.length})</span>
+              <span>行きたい ({userStats.visited.length})</span>
             </button>
 
             <button
               onClick={handleShareList}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-sm border shrink-0 cursor-pointer bg-gradient-to-r from-pink-400 to-orange-400 text-white border-transparent"
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-black transition-all shadow-sm shrink-0 cursor-pointer bg-gradient-to-r from-pink-400 to-orange-400 text-white"
             >
               <Share2 size={12} />
               <span>共有</span>

@@ -214,51 +214,70 @@ export function ShortsReelModal({
       </div>
 
       {/* Top Header Bar */}
-      <div className="absolute top-0 inset-x-0 z-30 p-4 md:p-6 flex items-center justify-between text-white bg-gradient-to-b from-black/80 via-black/40 to-transparent">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 text-xs font-black tracking-wide">
+      <div className="absolute top-0 inset-x-0 z-30 p-3 md:p-5 flex items-center justify-between text-white bg-gradient-to-b from-black/80 via-black/40 to-transparent">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[11px] font-black tracking-wide shrink-0 whitespace-nowrap">
             <span className="text-pink-400">🎬</span>
             <span>スイーツリール</span>
           </div>
-          <span className="text-xs font-black text-white/70 tracking-wider">
-            {currentIndex + 1} / {items.length}
-          </span>
+          {/* Video Counter with mini nav arrows */}
+          <div className="flex items-center gap-1 bg-black/40 backdrop-blur-md px-2 py-1 rounded-full border border-white/10 shrink-0 whitespace-nowrap">
+            <span className="text-[11px] font-black text-white/80">
+              {currentIndex + 1} / {items.length}
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2">
+          {/* Prev / Next Mini Controls in Header for quick access */}
+          <button
+            onClick={handlePrev}
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white active:scale-95"
+            title="前の動画 (↑)"
+          >
+            <ChevronUp size={16} strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={handleNext}
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white active:scale-95"
+            title="次の動画 (↓)"
+          >
+            <ChevronDown size={16} strokeWidth={2.5} />
+          </button>
+
           {/* Mute Toggle */}
           <button
             onClick={() => setIsMuted((prev) => !prev)}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/10 text-white"
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white"
             title={isMuted ? "音声をオンにする" : "音声をミュート"}
           >
-            {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} className="text-pink-400" />}
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} className="text-pink-400" />}
           </button>
 
           {/* Shuffle Toggle */}
           <button
             onClick={handleShuffleToggle}
-            className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/10 ${
-              isShuffled ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "bg-white/10 hover:bg-white/20 text-white"
+            className={`w-8 h-8 md:w-9 md:h-9 rounded-full backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 ${
+              isShuffled ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "bg-white/15 hover:bg-white/25 text-white"
             }`}
             title={isShuffled ? "シャッフル中" : "シャッフル再生"}
           >
-            <Shuffle size={18} />
+            <Shuffle size={15} />
           </button>
 
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/10 text-white hover:text-pink-400 ml-1"
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/20 hover:bg-pink-500 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white ml-1"
             title="閉じる (Esc)"
           >
-            <X size={22} strokeWidth={2.5} />
+            <X size={18} strokeWidth={2.5} />
           </button>
         </div>
       </div>
 
       {/* Main Reel Card Container */}
-      <div className="relative w-full h-full max-w-md max-h-[92vh] md:max-h-[88vh] flex items-center justify-center overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border border-white/10 bg-black">
+      <div className="relative w-full h-full max-w-md max-h-[88vh] md:max-h-[85vh] flex items-center justify-center overflow-hidden rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border border-white/10 bg-black">
         <AnimatePresence initial={false} custom={direction} mode="popLayout">
           <motion.div
             key={currentItem.id}
@@ -273,40 +292,46 @@ export function ShortsReelModal({
             onDragEnd={handleDragEnd}
             className="absolute inset-0 w-full h-full flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing"
           >
-            {/* Embedded YouTube Player */}
+            {/* Embedded YouTube Player (controls=0 to prevent UI overlaps with YouTube chrome) */}
             <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto">
               <iframe
                 key={`${currentItem.videoId}-${isMuted}`}
                 src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=${
                   isMuted ? 1 : 0
-                }&controls=1&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3`}
-                className="w-full h-full object-cover border-0"
+                }&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1`}
+                className="w-full h-full object-cover border-0 pointer-events-none"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             </div>
 
-            {/* Click-through helper overlay for swipe detection if needed */}
-            <div className="absolute top-16 left-0 right-16 bottom-40 z-10 pointer-events-none" />
+            {/* Right Action Bar (TikTok Style) - Raised up to prevent overlapping with bottom store card */}
+            <div className="absolute right-3 bottom-[160px] md:bottom-[150px] z-20 flex flex-col items-center gap-3 pointer-events-auto">
+              {/* Prev Video Button */}
+              <button
+                onClick={handlePrev}
+                className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title="前の動画"
+              >
+                <ChevronUp size={20} strokeWidth={2.5} />
+              </button>
 
-            {/* Right Action Bar (TikTok Style) */}
-            <div className="absolute right-3.5 bottom-28 z-20 flex flex-col items-center gap-4 pointer-events-auto">
               {/* Favorite Button */}
               <button
                 onClick={() => onToggleStat("favorites", store.id)}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
+                className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="御用達店に登録"
               >
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md shadow-lg transition-all duration-300 border ${
+                  className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center backdrop-blur-md shadow-lg transition-all duration-300 border ${
                     isFav
-                      ? "bg-pink-500 text-white border-pink-400 scale-110 shadow-pink-500/40"
-                      : "bg-black/50 text-white border-white/20 hover:bg-black/70 hover:scale-105"
+                      ? "bg-pink-500 text-white border-pink-400 scale-105 shadow-pink-500/40"
+                      : "bg-black/60 text-white border-white/20 hover:bg-black/80 hover:scale-105"
                   }`}
                 >
-                  <Heart size={22} fill={isFav ? "currentColor" : "none"} strokeWidth={2.5} />
+                  <Heart size={18} fill={isFav ? "currentColor" : "none"} strokeWidth={2.5} />
                 </div>
-                <span className="text-[10px] font-black text-white/90 drop-shadow">
+                <span className="text-[9px] font-black text-white drop-shadow-md">
                   {isFav ? "登録中" : "保存"}
                 </span>
               </button>
@@ -314,19 +339,19 @@ export function ShortsReelModal({
               {/* Visited / Wishlist Button */}
               <button
                 onClick={() => onToggleStat("visited", store.id)}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
+                className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="行ってみたいリストに登録"
               >
                 <div
-                  className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md shadow-lg transition-all duration-300 border ${
+                  className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center backdrop-blur-md shadow-lg transition-all duration-300 border ${
                     isVis
-                      ? "bg-orange-500 text-white border-orange-400 scale-110 shadow-orange-500/40"
-                      : "bg-black/50 text-white border-white/20 hover:bg-black/70 hover:scale-105"
+                      ? "bg-orange-500 text-white border-orange-400 scale-105 shadow-orange-500/40"
+                      : "bg-black/60 text-white border-white/20 hover:bg-black/80 hover:scale-105"
                   }`}
                 >
-                  <CheckCircle size={22} strokeWidth={2.5} />
+                  <CheckCircle size={18} strokeWidth={2.5} />
                 </div>
-                <span className="text-[10px] font-black text-white/90 drop-shadow">
+                <span className="text-[9px] font-black text-white drop-shadow-md">
                   {isVis ? "行きたい" : "行きたい"}
                 </span>
               </button>
@@ -337,31 +362,40 @@ export function ShortsReelModal({
                   onViewOnMap(store);
                   onClose();
                 }}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
+                className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="地図上で位置を確認"
               >
-                <div className="w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:text-pink-400">
-                  <MapPin size={22} />
+                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:text-pink-400">
+                  <MapPin size={18} />
                 </div>
-                <span className="text-[10px] font-black text-white/90 drop-shadow">地図</span>
+                <span className="text-[9px] font-black text-white drop-shadow-md">地図</span>
               </button>
 
               {/* Share Button */}
               <button
                 onClick={handleShare}
-                className="flex flex-col items-center gap-1 group cursor-pointer"
+                className="flex flex-col items-center gap-0.5 group cursor-pointer"
                 title="お店をシェア"
               >
-                <div className="w-12 h-12 rounded-full bg-black/50 hover:bg-black/70 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:text-orange-400">
-                  <Share2 size={20} />
+                <div className="w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 hover:text-orange-400">
+                  <Share2 size={16} />
                 </div>
-                <span className="text-[10px] font-black text-white/90 drop-shadow">共有</span>
+                <span className="text-[9px] font-black text-white drop-shadow-md">共有</span>
+              </button>
+
+              {/* Next Video Button */}
+              <button
+                onClick={handleNext}
+                className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white border border-white/20 backdrop-blur-md shadow-lg flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                title="次の動画"
+              >
+                <ChevronDown size={20} strokeWidth={2.5} />
               </button>
             </div>
 
-            {/* Bottom Store Info Card Overlay */}
-            <div className="absolute bottom-0 inset-x-0 z-20 p-4 pb-6 bg-gradient-to-t from-black/95 via-black/70 to-transparent pointer-events-auto">
-              <div className="pr-16 space-y-2">
+            {/* Bottom Store Info Card Overlay - Well clear of the raised action buttons */}
+            <div className="absolute bottom-0 inset-x-0 z-20 p-4 pb-5 bg-gradient-to-t from-black/95 via-black/75 to-transparent pointer-events-auto">
+              <div className="space-y-2">
                 {/* Badges: Genre & Distance */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {genre && (
@@ -382,7 +416,7 @@ export function ShortsReelModal({
                 </div>
 
                 {/* Store Name */}
-                <h3 className="text-lg md:text-xl font-black text-white leading-tight drop-shadow-md truncate">
+                <h3 className="text-base md:text-lg font-black text-white leading-tight drop-shadow-md truncate">
                   {store.nameJP}
                 </h3>
 
@@ -393,29 +427,17 @@ export function ShortsReelModal({
                   </p>
                 )}
 
-                {/* Action Buttons Row */}
-                <div className="pt-2 flex items-center gap-2.5">
+                {/* Action Button: Full width single primary button (No redundant Map button here) */}
+                <div className="pt-1.5 flex items-center gap-2">
                   <button
                     onClick={() => {
                       onStoreSelect(store);
                       onClose();
                     }}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 hover:opacity-95 text-white text-xs font-black shadow-lg shadow-pink-500/25 flex items-center justify-center gap-1.5 transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 hover:opacity-95 text-white text-xs font-black shadow-lg shadow-pink-500/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 cursor-pointer"
                   >
-                    <span>お店に入る</span>
-                    <span>➔</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      onViewOnMap(store);
-                      onClose();
-                    }}
-                    className="py-2.5 px-3.5 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-black backdrop-blur-md border border-white/20 flex items-center justify-center gap-1 transition-all active:scale-95 cursor-pointer shrink-0"
-                    title="地図で見る"
-                  >
-                    <MapPin size={14} className="text-pink-400" />
-                    <span>地図</span>
+                    <span>お店に入る（詳細・写真）</span>
+                    <span className="text-sm">➔</span>
                   </button>
                 </div>
               </div>
