@@ -4,11 +4,12 @@ import { useState, useEffect, useMemo } from "react";
 import { useStores } from "@/hooks/useStores";
 import { MapContainer } from "@/components/MapContainer";
 import { StoreDetailModal } from "@/components/StoreDetailModal";
+import { ShortsReelModal } from "@/components/ShortsReelModal";
 import { AdminPanel } from "@/components/AdminPanel";
 import { PWAInstallGuide } from "@/components/PWAInstallGuide";
 import { Store, UserStats } from "@/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X, Share2, Move } from "lucide-react";
+import { Settings, Plane, Heart, CheckCircle, Info, LayoutGrid, ChevronLeft, Search, Sparkles, Globe, Menu, MapPin, ArrowUpDown, Sliders, X, Share2, Move, Film } from "lucide-react";
 import { calculateDistance, formatDistance, getOptimizedImageUrl, getStoreAreaId, AREAS } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
@@ -34,6 +35,7 @@ export default function Home() {
   const [isPopupActive, setIsPopupActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showReelModal, setShowReelModal] = useState(false);
 
 
   // Monitor resize for mobile detection
@@ -476,6 +478,16 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Reel Mode Button */}
+                <button
+                  onClick={() => setShowReelModal(true)}
+                  className="bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 hover:from-pink-600 hover:to-orange-500 text-white px-4 py-2 rounded-full shadow-md flex items-center gap-1.5 text-xs font-black transition-all hover:scale-105 active:scale-95 cursor-pointer h-[38px] shadow-pink-200/50"
+                  title="ショート動画で店舗を次々巡る"
+                >
+                  <span className="text-sm">🎬</span>
+                  <span>動画で巡る</span>
+                </button>
+
                 {/* Share Button */}
                 <button
                   onClick={handleShareList}
@@ -598,6 +610,20 @@ export default function Home() {
             >
               <LayoutGrid size={12} />
               <span>ジャンル</span>
+            </button>
+
+            {/* Reel Mode Mobile Button */}
+            <button
+              onClick={() => {
+                setShowReelModal(true);
+                setShowGenreFilter(false);
+                setShowAreaFilter(false);
+                setBottomSheetState("collapsed");
+              }}
+              className="flex items-center gap-1 px-3 py-2 rounded-xl text-[10px] font-black transition-all shadow-md border shrink-0 cursor-pointer bg-gradient-to-r from-pink-500 via-pink-400 to-orange-400 text-white border-transparent shadow-pink-200/50 hover:scale-105 active:scale-95"
+            >
+              <span>🎬</span>
+              <span>動画</span>
             </button>
 
             <button
@@ -971,6 +997,23 @@ export default function Home() {
 
 
       {/* Modals */}
+      {showReelModal && (
+        <ShortsReelModal
+          stores={stores}
+          genres={genres}
+          userStats={userStats}
+          onClose={() => setShowReelModal(false)}
+          onStoreSelect={(store) => {
+            setSelectedStore(store);
+          }}
+          onViewOnMap={(store) => {
+            setFocusedStore(store);
+          }}
+          onToggleStat={toggleStat}
+          userLocation={userLocation}
+        />
+      )}
+
       <StoreDetailModal
         store={selectedStore}
         onClose={() => setSelectedStore(null)}
