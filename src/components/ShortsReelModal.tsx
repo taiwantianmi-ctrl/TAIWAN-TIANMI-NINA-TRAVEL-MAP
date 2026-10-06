@@ -123,19 +123,66 @@ export function ShortsReelModal({
 
   const currentItem = items[currentIndex];
 
-  // Helper to post command to YouTube iframe safely
-  const postToYouTube = useCallback((func: string, args: (string | number)[] = []) => {
+  // Safely locate current active YouTube iframe
+  const getTargetIframe = useCallback((): HTMLIFrameElement | null => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
+      return iframeRef.current;
+    }
+    if (currentItem?.id) {
+      const el = document.getElementById(`yt-player-${currentItem.id}`) as HTMLIFrameElement | null;
+      if (el && el.contentWindow) return el;
+    }
+    const anyIframe = document.querySelector('iframe[src*="youtube.com/embed"]') as HTMLIFrameElement | null;
+    if (anyIframe && anyIframe.contentWindow) return anyIframe;
+    return null;
+  }, [currentItem?.id]);
+
+  // Helper to post command to YouTube iframe safely and comprehensively
+  const postToYouTube = useCallback((func: string, args: (string | number | boolean)[] | string | number | boolean = "") => {
+    const iframe = getTargetIframe();
+    if (iframe && iframe.contentWindow) {
       try {
-        iframeRef.current.contentWindow.postMessage(
+        // Send command
+        iframe.contentWindow.postMessage(
           JSON.stringify({ event: "command", func, args }),
           "*"
         );
+
+        // If args is empty, send both empty string and empty array for 100% compatibility across YT player versions
+        if (args === "" || (Array.isArray(args) && args.length === 0)) {
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: "command", func, args: [] }),
+            "*"
+          );
+          iframe.contentWindow.postMessage(
+            JSON.stringify({ event: "command", func, args: "" }),
+            "*"
+          );
+        }
       } catch (e) {
         console.error("Failed to post message to YouTube iframe", e);
       }
     }
-  }, []);
+  }, [getTargetIframe]);
+
+  // Reliable burst unmute to catch the YouTube player readiness
+  const sendUnmute = useCallback(() => {
+    const trigger = () => {
+      postToYouTube("unMute", "");
+      postToYouTube("setVolume", [100]);
+    };
+
+    // Immediate
+    trigger();
+    // Burst retries across the next second to guarantee execution even during initialization
+    const timers = [
+      setTimeout(trigger, 80),
+      setTimeout(trigger, 250),
+      setTimeout(trigger, 550),
+      setTimeout(trigger, 950),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [postToYouTube]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
@@ -156,77 +203,106 @@ export function ShortsReelModal({
     setIsMuted((prev) => {
       const next = !prev;
       if (next) {
-        postToYouTube("mute", []);
+        postToYouTube("mute", "");
+        toast.success("音声をミュートしました", {
+          icon: "🔇",
+          style: {
+            borderRadius: "1rem",
+            background: "#5D4037",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+        });
       } else {
-        postToYouTube("unMute", []);
-        postToYouTube("setVolume", [100]);
-        postToYouTube("playVideo", []);
+        sendUnmute();
+        toast.success("音声をオンにしました 🔊 (端末の音量もご確認ください)", {
+          icon: "🔊",
+          duration: 3500,
+          style: {
+            borderRadius: "1rem",
+            background: "#5D4037",
+            color: "#fff",
+            fontWeight: "bold",
+          },
+        });
       }
-
-      toast.success(next ? "音声をミュートしました" : "音声をオンにしました", {
-        icon: next ? "🔇" : "🔊",
-        style: {
-          borderRadius: "1rem",
-          background: "#5D4037",
-          color: "#fff",
-          fontWeight: "bold",
-        },
-      });
       return next;
     });
-  }, [postToYouTube]);
+  }, [postToYouTube, sendUnmute]);
 
   // Play / Pause Toggle
   const handleTogglePlay = useCallback(() => {
     setIsPlaying((prev) => {
       const next = !prev;
       if (next) {
-        postToYouTube("playVideo", []);
+        postToYouTube("playVideo", "");
       } else {
-        postToYouTube("pauseVideo", []);
+        postToYouTube("pauseVideo", "");
       }
       return next;
     });
   }, [postToYouTube]);
 
-  // When changing video, keep unmuted if user enabled sound
+  // When changing video or loading iframe, keep unmuted if user enabled sound
   const handleIframeLoad = useCallback(() => {
-    if (iframeRef.current && iframeRef.current.contentWindow) {
+    const iframe = getTargetIframe();
+    if (iframe && iframe.contentWindow) {
       try {
-        iframeRef.current.contentWindow.postMessage(
+        iframe.contentWindow.postMessage(
           JSON.stringify({ event: "listening" }),
           "*"
         );
       } catch (e) {}
     }
     if (!isMuted) {
-      setTimeout(() => {
-        postToYouTube("unMute", []);
-        postToYouTube("setVolume", [100]);
-        postToYouTube("playVideo", []);
-      }, 500);
+      sendUnmute();
     }
-  }, [isMuted, postToYouTube]);
+  }, [getTargetIframe, isMuted, sendUnmute]);
 
-  // Listen to YouTube player state changes
+  // Listen to YouTube player state changes and readiness
   useEffect(() => {
     const handleMessage = (e: MessageEvent) => {
       try {
-        if (typeof e.data === "string") {
-          const data = JSON.parse(e.data);
-          if (data.event === "onStateChange") {
-            if (data.info === 1) setIsPlaying(true);
-            if (data.info === 2) setIsPlaying(false);
-          } else if (data.event === "infoDelivery" && data.info) {
-            if (data.info.playerState === 1) setIsPlaying(true);
-            if (data.info.playerState === 2) setIsPlaying(false);
+        let data: any = e.data;
+        if (typeof data === "string") {
+          try {
+            data = JSON.parse(data);
+          } catch {
+            return;
           }
+        }
+        if (!data || typeof data !== "object") return;
+
+        // When YouTube player announces it is ready or delivering initial status
+        if (data.event === "onReady" || data.event === "initialDelivery") {
+          const iframe = getTargetIframe();
+          iframe?.contentWindow?.postMessage(
+            JSON.stringify({ event: "listening" }),
+            "*"
+          );
+          if (!isMuted) {
+            sendUnmute();
+          }
+        }
+
+        if (data.event === "onStateChange") {
+          if (data.info === 1) setIsPlaying(true);
+          if (data.info === 2) setIsPlaying(false);
+          // Loop video if ended
+          if (data.info === 0) {
+            postToYouTube("seekTo", [0, true]);
+            postToYouTube("playVideo", "");
+          }
+        } else if (data.event === "infoDelivery" && data.info) {
+          if (data.info.playerState === 1) setIsPlaying(true);
+          if (data.info.playerState === 2) setIsPlaying(false);
         }
       } catch (err) {}
     };
+
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
-  }, []);
+  }, [getTargetIframe, isMuted, postToYouTube, sendUnmute]);
 
   const handleShuffleToggle = () => {
     setIsShuffled((prev) => !prev);
@@ -354,6 +430,8 @@ export function ShortsReelModal({
         <div className="flex items-center gap-1.5 md:gap-2">
           {/* Prev / Next Mini Controls in Header for quick access */}
           <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handlePrev}
             className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white active:scale-95"
             title="前の動画 (↑)"
@@ -361,6 +439,8 @@ export function ShortsReelModal({
             <ChevronUp size={16} strokeWidth={2.5} />
           </button>
           <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handleNext}
             className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white active:scale-95"
             title="次の動画 (↓)"
@@ -370,15 +450,36 @@ export function ShortsReelModal({
 
           {/* Mute Toggle */}
           <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handleToggleMute}
-            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white"
-            title={isMuted ? "音声をオンにする" : "音声をミュート"}
+            className={`w-8 h-8 md:w-9 md:h-9 rounded-full backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border ${
+              isMuted
+                ? "bg-white/15 hover:bg-white/25 border-white/15 text-white"
+                : "bg-pink-500/90 hover:bg-pink-600 border-pink-400 text-white shadow-lg shadow-pink-500/30"
+            }`}
+            title={isMuted ? "音声をオンにする (🔊)" : "音声をミュート (🔇)"}
           >
-            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} className="text-pink-400" />}
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} className="animate-pulse" />}
           </button>
+
+          {/* YouTube App / Web Link for direct playback if embedded audio is restricted */}
+          <a
+            href={`https://www.youtube.com/watch?v=${currentItem.videoId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
+            className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-red-600/80 hover:bg-red-600 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/20 text-white"
+            title="YouTube公式で開く (最高音質・全BGM)"
+          >
+            <ExternalLink size={14} />
+          </a>
 
           {/* Shuffle Toggle */}
           <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={handleShuffleToggle}
             className={`w-8 h-8 md:w-9 md:h-9 rounded-full backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 ${
               isShuffled ? "bg-pink-500 text-white shadow-lg shadow-pink-500/30" : "bg-white/15 hover:bg-white/25 text-white"
@@ -390,6 +491,8 @@ export function ShortsReelModal({
 
           {/* Close Button */}
           <button
+            onPointerDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             onClick={onClose}
             className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/20 hover:bg-pink-500 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white ml-1"
             title="閉じる (Esc)"
