@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Store, Genre, UserStats } from "@/types";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { X, Heart, CheckCircle, MapPin, Share2, Volume2, VolumeX, ChevronUp, ChevronDown, Shuffle, ExternalLink } from "lucide-react";
+import { X, Heart, CheckCircle, MapPin, Share2, Volume2, VolumeX, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Shuffle, ExternalLink } from "lucide-react";
 import { calculateDistance, formatDistance } from "@/lib/utils";
 import { toast } from "react-hot-toast";
 
@@ -69,6 +69,7 @@ export function ShortsReelModal({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isMuted, setIsMuted] = useState(true);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const isWheelCooling = useRef(false);
 
   // Sync items when rawItems changes
@@ -104,6 +105,63 @@ export function ShortsReelModal({
     setDirection(-1);
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
   }, [items.length]);
+
+  // Audio Toggle with YouTube IFrame API via postMessage
+  const handleToggleMute = useCallback(() => {
+    setIsMuted((prev) => {
+      const next = !prev;
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        try {
+          const command = next ? "mute" : "unMute";
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ event: "command", func: command, args: [] }),
+            "*"
+          );
+          if (!next) {
+            iframeRef.current.contentWindow.postMessage(
+              JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
+              "*"
+            );
+            iframeRef.current.contentWindow.postMessage(
+              JSON.stringify({ event: "command", func: "playVideo", args: [] }),
+              "*"
+            );
+          }
+        } catch (e) {
+          console.error("Failed to post message to youtube iframe", e);
+        }
+      }
+      toast.success(next ? "音声をミュートしました" : "音声をオンにしました", {
+        icon: next ? "🔇" : "🔊",
+        style: {
+          borderRadius: "1rem",
+          background: "#5D4037",
+          color: "#fff",
+          fontWeight: "bold",
+        },
+      });
+      return next;
+    });
+  }, []);
+
+  // When changing video, keep unmuted if user enabled sound
+  useEffect(() => {
+    if (!isMuted && iframeRef.current && iframeRef.current.contentWindow) {
+      const timer = setTimeout(() => {
+        try {
+          iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ event: "command", func: "unMute", args: [] }),
+            "*"
+          );
+          iframeRef.current?.contentWindow?.postMessage(
+            JSON.stringify({ event: "command", func: "setVolume", args: [100] }),
+            "*"
+          );
+        } catch (e) {}
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [currentIndex, isMuted]);
 
   const handleShuffleToggle = () => {
     setIsShuffled((prev) => !prev);
@@ -247,7 +305,7 @@ export function ShortsReelModal({
 
           {/* Mute Toggle */}
           <button
-            onClick={() => setIsMuted((prev) => !prev)}
+            onClick={handleToggleMute}
             className="w-8 h-8 md:w-9 md:h-9 rounded-full bg-white/15 hover:bg-white/25 backdrop-blur-md flex items-center justify-center transition-all cursor-pointer border border-white/15 text-white"
             title={isMuted ? "音声をオンにする" : "音声をミュート"}
           >
@@ -292,13 +350,14 @@ export function ShortsReelModal({
             onDragEnd={handleDragEnd}
             className="absolute inset-0 w-full h-full flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing"
           >
-            {/* Embedded YouTube Player (controls=0 to prevent UI overlaps with YouTube chrome) */}
+            {/* Embedded YouTube Player (enablejsapi=1 for postMessage audio control) */}
             <div className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto">
               <iframe
-                key={`${currentItem.videoId}-${isMuted}`}
+                ref={iframeRef}
+                key={currentItem.videoId}
                 src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=${
                   isMuted ? 1 : 0
-                }&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1`}
+                }&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1`}
                 className="w-full h-full object-cover border-0 pointer-events-none"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -446,23 +505,22 @@ export function ShortsReelModal({
         </AnimatePresence>
       </div>
 
-      {/* Desktop Floating Navigation Arrows (Side) */}
-      <div className="hidden lg:flex flex-col gap-3 absolute right-8 top-1/2 -translate-y-1/2 z-30">
-        <button
-          onClick={handlePrev}
-          className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-xl"
-          title="前の動画 (↑)"
-        >
-          <ChevronUp size={24} strokeWidth={2.5} />
-        </button>
-        <button
-          onClick={handleNext}
-          className="w-12 h-12 rounded-full bg-white/15 hover:bg-white/30 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-xl"
-          title="次の動画 (↓)"
-        >
-          <ChevronDown size={24} strokeWidth={2.5} />
-        </button>
-      </div>
+      {/* Desktop Left / Right Navigation Arrows (PC only - placed on left & right sides of video) */}
+      <button
+        onClick={handlePrev}
+        className="hidden md:flex absolute left-4 lg:left-10 xl:left-24 top-1/2 -translate-y-1/2 z-40 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white/15 hover:bg-white/30 text-white backdrop-blur-md border border-white/20 items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-2xl group"
+        title="前の動画 (← / ↑)"
+      >
+        <ChevronLeft size={28} strokeWidth={2.5} className="group-hover:-translate-x-0.5 transition-transform" />
+      </button>
+
+      <button
+        onClick={handleNext}
+        className="hidden md:flex absolute right-4 lg:right-10 xl:right-24 top-1/2 -translate-y-1/2 z-40 w-12 h-12 lg:w-14 lg:h-14 rounded-full bg-white/15 hover:bg-white/30 text-white backdrop-blur-md border border-white/20 items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shadow-2xl group"
+        title="次の動画 (→ / ↓)"
+      >
+        <ChevronRight size={28} strokeWidth={2.5} className="group-hover:translate-x-0.5 transition-transform" />
+      </button>
     </div>
   );
 }

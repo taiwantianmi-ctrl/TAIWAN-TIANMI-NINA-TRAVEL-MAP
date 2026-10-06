@@ -430,27 +430,24 @@ export default function Home() {
           )}
         </div>
 
-        {/* Row 2: Compact Inline Filter Bar (Desktop Only) */}
+        {/* PC Filters: 2 separate rows so ALL options are fully visible */}
         {!isMobile && (
-          <div className="mt-2 pt-2 border-t border-gray-100 flex items-center justify-between gap-4 pointer-events-auto">
-            {/* Area Filter Pills */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1 text-orange-500 font-black text-[11px] shrink-0">
-                <MapPin size={13} />
+          <div className="mt-2.5 pt-2 border-t border-gray-100 flex flex-col gap-2 pointer-events-auto">
+            {/* Row 1: Area Filter (All Options Visible) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-orange-500 font-black text-xs shrink-0 mr-1">
+                <MapPin size={14} />
                 <span>エリア:</span>
               </div>
-              <div 
-                className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5 [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
+              <div className="flex items-center gap-1.5 flex-wrap">
                 {AREAS.map(area => (
                   <button
                     key={area.id}
                     onClick={() => setSelectedAreaId(area.id)}
-                    className={`px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                    className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer shadow-xs ${
                       selectedAreaId === area.id
-                        ? "bg-orange-500 text-white shadow-sm shadow-orange-200"
-                        : "bg-orange-50/60 text-[#8C6D62] hover:bg-orange-100/60"
+                        ? "bg-orange-500 text-white shadow-sm shadow-orange-200 ring-2 ring-orange-200"
+                        : "bg-[#FFF8F5] text-[#7C5D52] hover:bg-orange-100/70 border border-[#FFE8DF]"
                     }`}
                   >
                     {area.name}
@@ -459,25 +456,19 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Separator */}
-            <div className="h-4 w-px bg-gray-200 shrink-0" />
-
-            {/* Genre Filter Pills */}
-            <div className="flex-1 flex items-center gap-2 min-w-0">
-              <div className="flex items-center gap-1 text-pink-500 font-black text-[11px] shrink-0">
-                <LayoutGrid size={13} />
+            {/* Row 2: Genre Filter (All Options Visible) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-pink-500 font-black text-xs shrink-0 mr-1">
+                <LayoutGrid size={14} />
                 <span>ジャンル:</span>
               </div>
-              <div 
-                className="flex-1 flex items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 [&::-webkit-scrollbar]:hidden"
-                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-              >
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
                   onClick={() => setSelectedGenreIds([])}
-                  className={`px-3 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                  className={`px-3 py-1 rounded-full text-xs font-black transition-all cursor-pointer shadow-xs ${
                     selectedGenreIds.length === 0
-                      ? "bg-sweet-brown text-white shadow-sm"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-sweet-brown text-white shadow-sm ring-2 ring-sweet-brown/20"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200/60"
                   }`}
                 >
                   すべて
@@ -486,10 +477,10 @@ export default function Home() {
                   <button
                     key={genre.id}
                     onClick={() => toggleFilterGenre(genre.id)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition-all cursor-pointer whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-black transition-all cursor-pointer shadow-xs ${
                       selectedGenreIds.includes(genre.id)
-                        ? "bg-pink-500 text-white shadow-sm shadow-pink-200"
-                        : "bg-pink-50/60 text-[#8C6D62] hover:bg-pink-100/60"
+                        ? "bg-pink-500 text-white shadow-sm shadow-pink-200 ring-2 ring-pink-200"
+                        : "bg-[#FFF9FA] text-[#7C5D52] hover:bg-pink-100/70 border border-[#FFE4E8]"
                     }`}
                   >
                     <span>{genre.iconUrl}</span>
