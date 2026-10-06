@@ -19,6 +19,13 @@ interface ShortsReelModalProps {
   initialStoreId?: string;
 }
 
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady?: () => void;
+  }
+}
+
 interface ReelItem {
   id: string;
   store: Store;
@@ -71,8 +78,19 @@ export function ShortsReelModal({
   const [isMuted, setIsMuted] = useState(true);
   const [isPlaying, setIsPlaying] = useState(true);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const playerRef = useRef<any>(null);
   const isWheelCooling = useRef(false);
   const isDragging = useRef(false);
+
+  // Load YouTube IFrame API script once
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      firstScriptTag?.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+  }, []);
 
   // Sync items when rawItems changes
   useEffect(() => {
@@ -96,7 +114,38 @@ export function ShortsReelModal({
 
   const currentItem = items[currentIndex];
 
-  // Helper to post command to YouTube iframe safely
+  // Initialize YT.Player instance when ready
+  const initYTPlayer = useCallback(() => {
+    if (typeof window !== "undefined" && window.YT && window.YT.Player) {
+      try {
+        const iframeId = `yt-player-${currentItem.videoId}`;
+        if (playerRef.current) {
+          try {
+            playerRef.current.destroy();
+          } catch (e) {}
+        }
+        playerRef.current = new window.YT.Player(iframeId, {
+          events: {
+            onReady: (event: any) => {
+              if (!isMuted) {
+                event.target.unMute();
+                event.target.setVolume(100);
+                event.target.playVideo();
+              }
+            },
+            onStateChange: (event: any) => {
+              if (event.data === 1) setIsPlaying(true);
+              if (event.data === 2) setIsPlaying(false);
+            },
+          },
+        });
+      } catch (e) {
+        console.error("YT.Player init error:", e);
+      }
+    }
+  }, [currentItem.videoId, isMuted]);
+
+  // Helper to post command to YouTube iframe safely (as backup protocol)
   const postToYouTube = useCallback((func: string, args: (string | number)[] = []) => {
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
@@ -124,19 +173,33 @@ export function ShortsReelModal({
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : items.length - 1));
   }, [items.length]);
 
-  // Audio Toggle with YouTube IFrame API via postMessage (NEVER reload iframe)
+  // Audio Toggle with both official YT.Player API AND postMessage
   const handleToggleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
-      if (next) {
-        // Mute
-        postToYouTube("mute");
-      } else {
-        // Unmute and ensure playback continues smoothly
-        postToYouTube("unMute");
+
+      // 1. Official YT.Player API call
+      if (playerRef.current) {
+        try {
+          if (next) {
+            playerRef.current.mute();
+          } else {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(100);
+            playerRef.current.playVideo();
+          }
+        } catch (e) {
+          console.error("playerRef method call error", e);
+        }
+      }
+
+      // 2. Direct postMessage backup
+      postToYouTube(next ? "mute" : "unMute");
+      if (!next) {
         postToYouTube("setVolume", [100]);
         postToYouTube("playVideo");
       }
+
       toast.success(next ? "音声をミュートしました" : "音声をオンにしました", {
         icon: next ? "🔇" : "🔊",
         style: {
@@ -154,6 +217,15 @@ export function ShortsReelModal({
   const handleTogglePlay = useCallback(() => {
     setIsPlaying((prev) => {
       const next = !prev;
+      if (playerRef.current) {
+        try {
+          if (next) {
+            playerRef.current.playVideo();
+          } else {
+            playerRef.current.pauseVideo();
+          }
+        } catch (e) {}
+      }
       if (next) {
         postToYouTube("playVideo");
       } else {
@@ -165,6 +237,7 @@ export function ShortsReelModal({
 
   // When changing video, keep unmuted if user enabled sound
   const handleIframeLoad = useCallback(() => {
+    initYTPlayer();
     if (iframeRef.current && iframeRef.current.contentWindow) {
       try {
         iframeRef.current.contentWindow.postMessage(
@@ -175,12 +248,19 @@ export function ShortsReelModal({
     }
     if (!isMuted) {
       setTimeout(() => {
+        if (playerRef.current) {
+          try {
+            playerRef.current.unMute();
+            playerRef.current.setVolume(100);
+            playerRef.current.playVideo();
+          } catch (e) {}
+        }
         postToYouTube("unMute");
         postToYouTube("setVolume", [100]);
         postToYouTube("playVideo");
       }, 500);
     }
-  }, [isMuted, postToYouTube]);
+  }, [initYTPlayer, isMuted, postToYouTube]);
 
   // Listen to YouTube player state changes
   useEffect(() => {
@@ -397,7 +477,7 @@ export function ShortsReelModal({
             }}
             className="absolute inset-0 w-full h-full flex flex-col justify-between overflow-hidden cursor-grab active:cursor-grabbing"
           >
-            {/* Embedded YouTube Player (enablejsapi=1 for postMessage audio control) */}
+            {/* Embedded YouTube Player (with official YT API, native controls, and postMessage) */}
             <div
               onClick={() => {
                 if (!isDragging.current) {
@@ -407,18 +487,38 @@ export function ShortsReelModal({
               className="absolute inset-0 w-full h-full bg-black flex items-center justify-center pointer-events-auto cursor-pointer"
             >
               <iframe
+                id={`yt-player-${currentItem.videoId}`}
                 ref={iframeRef}
                 key={currentItem.videoId}
-                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1${
+                src={`https://www.youtube.com/embed/${currentItem.videoId}?autoplay=1&mute=1&controls=1&modestbranding=1&loop=1&playlist=${currentItem.videoId}&playsinline=1&rel=0&iv_load_policy=3&enablejsapi=1${
                   typeof window !== "undefined" && window.location.origin
                     ? `&origin=${encodeURIComponent(window.location.origin)}`
                     : ""
                 }`}
                 onLoad={handleIframeLoad}
-                className="w-full h-full object-cover border-0 pointer-events-none"
+                className="w-full h-full object-cover border-0 pointer-events-auto"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
               />
+
+              {/* Floating Unmute Guide Button when muted */}
+              <AnimatePresence>
+                {isMuted && (
+                  <motion.button
+                    initial={{ opacity: 0, y: -15, scale: 0.9 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -15, scale: 0.9 }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleToggleMute();
+                    }}
+                    className="absolute top-16 md:top-20 z-30 px-5 py-2.5 rounded-full bg-pink-500/95 hover:bg-pink-600 text-white font-bold text-xs md:text-sm shadow-2xl backdrop-blur-md flex items-center gap-2 border border-white/20 active:scale-95 transition-all cursor-pointer pointer-events-auto hover:shadow-pink-500/50"
+                  >
+                    <Volume2 size={18} className="animate-pulse" />
+                    <span>タップして音声を再生 🔊</span>
+                  </motion.button>
+                )}
+              </AnimatePresence>
 
               {/* Pause Overlay indicator */}
               <AnimatePresence>
