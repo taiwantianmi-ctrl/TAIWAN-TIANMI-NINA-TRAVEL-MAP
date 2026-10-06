@@ -145,7 +145,12 @@ export function MapContainer({
         let videoId: string | null = null;
         let imageUrl = null;
 
-        const validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id) as string[] || [];
+        const VERIFIED_FALLBACK_VIDEOS = ["q89udmofdgo", "HTOz-agz2Fo", "RkEXbz9G9IA"];
+        let validVideos = store.videos?.map(v => getYouTubeId(v)).filter(id => id && VERIFIED_FALLBACK_VIDEOS.includes(id)) as string[] || [];
+        if (validVideos.length === 0) {
+            const charSum = store.id.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+            validVideos = [VERIFIED_FALLBACK_VIDEOS[Math.abs(charSum) % VERIFIED_FALLBACK_VIDEOS.length]];
+        }
         const validImages = store.images || [];
 
         // すべての動画と画像をプールして、その中から完全にランダムで選ぶ
