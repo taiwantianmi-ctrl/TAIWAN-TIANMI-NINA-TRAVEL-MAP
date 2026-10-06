@@ -3,7 +3,7 @@
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from "@vis.gl/react-google-maps";
 import { Store, Genre } from "@/types";
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Heart, Eye } from "lucide-react";
+import { Search, MapPin, Navigation, Plus, Minus, Maximize, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, X, Heart, Eye, Volume2, VolumeX } from "lucide-react";
 import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
@@ -54,6 +54,8 @@ export function MapContainer({
     const watchIdRef = useRef<number | null>(null);
     const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
     const [activePopup, setActivePopup] = useState<{ storeId: string, videoId: string | null, imageUrl: string | null } | null>(null);
+    const [isPopupMuted, setIsPopupMuted] = useState(true);
+    const popupIframeRef = useRef<HTMLIFrameElement>(null);
     const [isMobile, setIsMobile] = useState(false);
     const [selectedMobileStore, setSelectedMobileStore] = useState<Store | null>(null);
     const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -70,10 +72,59 @@ export function MapContainer({
 
     const updateActivePopup = useCallback((val: typeof activePopup) => {
         setActivePopup(val);
+        setIsPopupMuted(true);
         if (onPopupActiveChange) {
             onPopupActiveChange(val !== null);
         }
     }, [onPopupActiveChange]);
+
+    const handleTogglePopupMute = useCallback((e?: React.MouseEvent) => {
+        if (e) e.stopPropagation();
+        setIsPopupMuted(prev => {
+            const next = !prev;
+            if (popupIframeRef.current && popupIframeRef.current.contentWindow) {
+                try {
+                    popupIframeRef.current.contentWindow.postMessage(
+                        JSON.stringify({
+                            event: "command",
+                            func: next ? "mute" : "unMute",
+                            args: []
+                        }),
+                        "*"
+                    );
+                    popupIframeRef.current.contentWindow.postMessage(
+                        JSON.stringify({
+                            event: "command",
+                            func: next ? "mute" : "unMute",
+                            args: ""
+                        }),
+                        "*"
+                    );
+                    if (!next) {
+                        popupIframeRef.current.contentWindow.postMessage(
+                            JSON.stringify({
+                                event: "command",
+                                func: "setVolume",
+                                args: [100]
+                            }),
+                            "*"
+                        );
+                        popupIframeRef.current.contentWindow.postMessage(
+                            JSON.stringify({
+                                event: "command",
+                                func: "playVideo",
+                                args: []
+                            }),
+                            "*"
+                        );
+                    }
+                } catch (err) {
+                    console.error("Popup video audio toggle error", err);
+                }
+            }
+            return next;
+        });
+    }, []);
 
 
     const getYouTubeId = (url?: string) => {
@@ -609,14 +660,33 @@ export function MapContainer({
                                             
                                             {/* ランダム選択されたメディアを表示 */}
                                             {activePopup.videoId ? (
-                                                <div className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner">
+                                                <div 
+                                                    onClick={handleTogglePopupMute}
+                                                    className="relative aspect-video w-full bg-black rounded-lg overflow-hidden mb-1.5 shadow-inner cursor-pointer group"
+                                                    title={isPopupMuted ? "クリックして音声を再生" : "クリックしてミュート"}
+                                                >
                                                     <iframe 
-                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&vq=small`}
+                                                        ref={popupIframeRef}
+                                                        src={`https://www.youtube.com/embed/${activePopup.videoId}?autoplay=1&mute=1&controls=0&modestbranding=1&loop=1&playlist=${activePopup.videoId}&enablejsapi=1&playsinline=1`}
                                                         className="absolute top-0 left-0 w-[200%] h-[200%] origin-top-left scale-50 pointer-events-none z-10 border-0"
-                                                        allow="autoplay"
+                                                        allow="autoplay; accelerometer; encrypted-media"
                                                     />
-                                                    {/* 透明なオーバーレイでクリック防止および地図操作の邪魔をしないようにする */}
-                                                    <div className="absolute inset-0 z-20 pointer-events-auto cursor-default" />
+
+                                                    {/* 音声トグルボタン＆ガイドバッジ */}
+                                                    <div className="absolute top-1.5 left-1.5 z-30 flex items-center gap-1">
+                                                        <button
+                                                            onClick={handleTogglePopupMute}
+                                                            className="w-5 h-5 rounded-full bg-black/75 hover:bg-black/90 text-white backdrop-blur-md shadow-md border border-white/20 transition-all flex items-center justify-center cursor-pointer active:scale-90"
+                                                            title={isPopupMuted ? "音声をオンにする" : "音声をミュート"}
+                                                        >
+                                                            {isPopupMuted ? <VolumeX size={10} className="text-white" /> : <Volume2 size={10} className="text-pink-400" />}
+                                                        </button>
+                                                        {isPopupMuted && (
+                                                            <span className="bg-pink-500/90 text-white text-[7px] font-black px-1.5 py-0.5 rounded-full shadow-md backdrop-blur-sm animate-pulse">
+                                                                🔊 音声を再生
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             ) : activePopup.imageUrl ? (
                                                 <div className="aspect-video w-full bg-gray-100 rounded-lg overflow-hidden mb-1.5 shadow-inner">

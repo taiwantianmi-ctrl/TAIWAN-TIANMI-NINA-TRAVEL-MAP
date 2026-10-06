@@ -153,11 +153,29 @@ export function ShortsReelModal({
           JSON.stringify({ event: "command", func, args }),
           "*"
         );
+        iframeRef.current.contentWindow.postMessage(
+          JSON.stringify({ event: "command", func, args: "" }),
+          "*"
+        );
       } catch (e) {
         console.error("Failed to post message to YouTube iframe", e);
       }
     }
   }, []);
+
+  // Hook for when YouTube API becomes ready
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const prevCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (prevCallback) prevCallback();
+        initYTPlayer();
+      };
+      if (window.YT && window.YT.Player) {
+        initYTPlayer();
+      }
+    }
+  }, [initYTPlayer]);
 
   const handleNext = useCallback(() => {
     if (items.length <= 1) return;
